@@ -1,0 +1,5 @@
+# Runtime dependencies of the agent Lambda (bundled by infra/ecolink_stack.py).
+# boto3/botocore are provided by the Lambda runtime. strands-agents-builder from the root
+# requirements.txt is a CLI that the agent never imports, so it is not bundled.
+strands-agents==0.1.9
+requests==2.32.3

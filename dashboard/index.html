@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoLink · Operations & Dispatch Console</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Leaflet Map CSS/JS (OpenStreetMap / Amazon Location Service) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</head>
+<body>
+
+  <!-- AUTHENTICATION SCREEN (Cognito-ready Gateway) -->
+  <div id="login-screen" class="login-container">
+    <div class="login-ambient-1"></div>
+    <div class="login-ambient-2"></div>
+
+    <!-- Very Subtle Dispatch Network Background -->
+    <svg class="login-network-canvas" viewBox="0 0 1000 800" fill="none">
+      <circle cx="200" cy="300" r="4" fill="#0F3D2E" opacity="0.3"/>
+      <circle cx="500" cy="400" r="6" fill="#159A68" opacity="0.5"/>
+      <circle cx="800" cy="350" r="4" fill="#0F3D2E" opacity="0.3"/>
+      <path d="M200 300 Q350 250 500 400 T800 350" stroke="#0F3D2E" stroke-width="1.2" stroke-dasharray="6,6" opacity="0.18"/>
+      <path d="M250 500 Q500 550 750 480" stroke="#159A68" stroke-width="1" stroke-dasharray="4,4" opacity="0.15"/>
+    </svg>
+
+    <!-- Top Navigation -->
+    <header class="login-topbar">
+      <a href="../site/index.html" class="login-brand-link">
+        <div class="login-logo-mark">E</div>
+        <span class="login-brand-title">EcoLink</span>
+      </a>
+
+      <a href="../site/index.html" class="back-to-landing">
+        ← Back to EcoLink
+      </a>
+    </header>
+
+    <!-- Main Login Content -->
+    <div class="login-stage">
+      <div class="login-hero-text">
+        <span class="login-eyebrow">ECOLINK OPS</span>
+        <h1 class="login-headline">Run the network behind every pickup.</h1>
+        <p class="login-subtext">Monitor requests, coordinate recycler dispatch, and keep every pickup moving.</p>
+      </div>
+
+      <div class="login-card">
+        <div class="login-card-header">
+          <span class="login-card-title">Operations access</span>
+          <span class="cognito-badge">Protected by AWS Cognito</span>
+        </div>
+
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-email">Operator Email</label>
+            <input type="email" id="login-email" value="admin@ecolink.internal" required placeholder="admin@ecolink.internal">
+            <span class="hint">Use <code>admin@...</code> for Admin access, or <code>ops@...</code> for Viewer</span>
+          </div>
+
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" value="EcoLink2026!Aws" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">
+            Continue to Ops →
+          </button>
+        </form>
+
+        <div class="login-footer-notes">
+          Need access? <a href="mailto:access@ecolink.internal">Request operations access →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Brief Transition State Overlay (300-500ms) -->
+    <div id="auth-transition" class="auth-transition-overlay">
+      <div class="auth-transition-path">
+        <span>AUTHENTICATING</span>
+        <div class="auth-step-line"></div>
+        <span>IDENTITY VERIFIED</span>
+        <div class="auth-step-line"></div>
+        <span style="color:var(--primary-green);">OPS NETWORK READY</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD (CONTROL ROOM) -->
+  <div id="app" class="dashboard-layout hidden">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand-mark">E</div>
+        <div class="sidebar-brand-info">
+          <div class="sidebar-title-row">
+            <h2>EcoLink</h2>
+            <span id="user-badge" class="user-badge">Admin</span>
+          </div>
+          <span class="sidebar-brand-sub">OPERATIONS CONSOLE</span>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <button class="nav-item active" data-tab="pickups-view">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+          <span>Pickups</span>
+        </button>
+        <button class="nav-item" data-tab="map-view">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon><line x1="8" y1="2" x2="8" y2="18"></line><line x1="16" y1="6" x2="16" y2="22"></line></svg>
+          <span>Live Dispatch</span>
+        </button>
+        <button class="nav-item" data-tab="pickups-view" onclick="document.querySelector('[data-filter=\'confirmed\']')?.click()">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span>Recycler Network</span>
+        </button>
+        <button class="nav-item" data-tab="pickups-view" onclick="document.querySelector('[data-filter=\'all\']')?.click()">
+          <svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          <span>Activity Feed</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user-card">
+          <div class="user-avatar-circle">OP</div>
+          <div class="user-meta-info">
+            <span class="user-email-text" id="sidebar-user-display">admin@ecolink</span>
+            <span class="user-role-label">Cognito Verified</span>
+          </div>
+        </div>
+
+        <div class="sidebar-actions-row">
+          <button id="btn-demo-reset" class="btn btn-warning btn-sm btn-block">
+            Demo Reset
+          </button>
+          <button id="btn-logout" class="btn btn-outline btn-sm btn-block">
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <!-- HEADER -->
+      <header class="topbar">
+        <div class="topbar-title">
+          <h2 id="view-title">Pickup network</h2>
+          <p class="topbar-subtitle" id="view-subtitle">Every request, offer, and confirmed pickup in one place.</p>
+        </div>
+        <div class="topbar-actions">
+          <div class="topbar-cluster-tag">
+            <span class="cluster-dot"></span>
+            <span>BLR-Metro-1</span>
+          </div>
+          <span class="indicator-live"><span class="dot"></span> Live network active</span>
+          <button id="btn-refresh" class="btn btn-secondary btn-sm">↻ Refresh</button>
+        </div>
+      </header>
+
+      <!-- TAB 1: PICKUPS LIST & DETAIL -->
+      <section id="pickups-view" class="tab-pane active">
+        <!-- STATS BAR -->
+        <div class="stats-row">
+          <div class="stat-card stat-total">
+            <div class="stat-header">
+              <span class="stat-label">Total Pickups</span>
+              <span class="stat-icon-badge">📦</span>
+            </div>
+            <span class="stat-num" id="stat-total">0</span>
+            <span class="stat-hint">Active pipeline</span>
+          </div>
+          <div class="stat-card stat-requested">
+            <div class="stat-header">
+              <span class="stat-label">Requested</span>
+              <span class="stat-icon-badge">⏳</span>
+            </div>
+            <span class="stat-num" id="stat-requested">0</span>
+            <span class="stat-hint">Awaiting match</span>
+          </div>
+          <div class="stat-card stat-offered">
+            <div class="stat-header">
+              <span class="stat-label">Offered</span>
+              <span class="stat-icon-badge">📞</span>
+            </div>
+            <span class="stat-num" id="stat-offered">0</span>
+            <span class="stat-hint">IVR calling active</span>
+          </div>
+          <div class="stat-card stat-confirmed">
+            <div class="stat-header">
+              <span class="stat-label">Confirmed</span>
+              <span class="stat-icon-badge">✅</span>
+            </div>
+            <span class="stat-num" id="stat-confirmed">0</span>
+            <span class="stat-hint">Address unlocked</span>
+          </div>
+          <div class="stat-card stat-completed">
+            <div class="stat-header">
+              <span class="stat-label">Completed</span>
+              <span class="stat-icon-badge">✨</span>
+            </div>
+            <span class="stat-num" id="stat-completed">0</span>
+            <span class="stat-hint">Weighed & paid</span>
+          </div>
+        </div>
+
+        <!-- FILTERS & SEARCH TOOLBAR -->
+        <div class="filters-bar">
+          <div class="filter-group">
+            <label>Filter:</label>
+            <div class="filter-chips" id="status-filters">
+              <button class="chip active" data-filter="all">All <span class="chip-count" id="count-all">0</span></button>
+              <button class="chip" data-filter="requested">Requested <span class="chip-count" id="count-requested">0</span></button>
+              <button class="chip" data-filter="offered">Offered <span class="chip-count" id="count-offered">0</span></button>
+              <button class="chip" data-filter="confirmed">Confirmed <span class="chip-count" id="count-confirmed">0</span></button>
+              <button class="chip" data-filter="completed">Completed <span class="chip-count" id="count-completed">0</span></button>
+              <button class="chip" data-filter="declined">Declined <span class="chip-count" id="count-declined">0</span></button>
+            </div>
+          </div>
+
+          <div class="search-box-wrapper">
+            <svg class="search-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="pickup-search" class="search-input" placeholder="Search by ID, material, user, recycler..." />
+          </div>
+        </div>
+
+        <!-- TWO COLUMN MASTER-DETAIL -->
+        <div class="master-detail-container">
+          <!-- LIST -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Pickup ID</th>
+                  <th>Household</th>
+                  <th>Materials</th>
+                  <th>Est. Value</th>
+                  <th>Scheduled Slot</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="pickups-table-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- DETAIL MODAL / DRAWER -->
+          <div id="detail-drawer" class="detail-drawer hidden">
+            <div class="drawer-header">
+              <div class="drawer-header-info">
+                <h3>Pickup Overview</h3>
+                <span id="drawer-subtitle" class="drawer-sub">Dispatch telemetry & agent log</span>
+              </div>
+              <button id="close-drawer" class="close-btn" title="Close overview">&times;</button>
+            </div>
+            <div class="drawer-body" id="detail-content">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: LIVE MAP VIEW -->
+      <section id="map-view" class="tab-pane hidden">
+        <div class="map-controls">
+          <div class="map-legend">
+            <span class="legend-item"><span class="marker-dot marker-pickup"></span> Active Pickups</span>
+            <span class="legend-item"><span class="marker-dot marker-recycler"></span> Recyclers (Kabadiwalas)</span>
+            <span class="legend-item"><span class="marker-dot marker-dropoff"></span> Authorised Drop-off</span>
+          </div>
+          <div class="map-actions-group">
+            <button id="btn-map-fit" class="btn btn-secondary btn-sm">Fit All Markers</button>
+            <button id="btn-map-center" class="btn btn-secondary btn-sm">Center Hub</button>
+          </div>
+        </div>
+        <div id="map-canvas" class="map-canvas"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+/* ==========================================================================
+   EcoLink Unified Design System Variables
+   Shared across Landing, Login, and Operations Dashboard
+   Palette:
+   Background: #F7F9F5
+   Deep green: #0F3D2E
+   Primary green: #159A68
+   Soft green: #DDF7EA
+   AI blue: #DCECF4
+   Text: #14231D
+   Muted text: #718078
+   Border: #E3EAE5
+   White: #FFFFFF
+   ========================================================================== */
+
+:root {
+  --bg-main: #F7F9F5;
+  --bg-subtle: #F0F4EC;
+  --bg-surface: #FFFFFF;
+  --bg-card: rgba(255, 255, 255, 0.85);
+
+  --deep-green: #0F3D2E;
+  --primary-green: #159A68;
+  --primary-hover: #108056;
+  --soft-green: #DDF7EA;
+  --soft-green-border: #B7EACC;
+
+  --ai-blue: #DCECF4;
+  --ai-blue-border: #BCD9E6;
+
+  --text-main: #14231D;
+  --text-muted: #718078;
+  --text-faint: #98A69E;
+
+  --border-light: #E3EAE5;
+  --border-glass: rgba(227, 234, 229, 0.8);
+  --border-card: rgba(15, 61, 46, 0.08);
+
+  /* Status Colors */
+  --status-requested: #B45309;
+  --status-requested-bg: #FEF3C7;
+  --status-offered: #1D4ED8;
+  --status-offered-bg: #DBEAFE;
+  --status-confirmed: #0F3D2E;
+  --status-confirmed-bg: #DDF7EA;
+  --status-completed: #4F46E5;
+  --status-completed-bg: #EEF2FF;
+  --status-declined: #B91C1C;
+  --status-declined-bg: #FEE2E2;
+  --status-cancelled: #4B5563;
+  --status-cancelled-bg: #F3F4F6;
+
+  /* Typography */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 3px rgba(15, 61, 46, 0.04), 0 1px 2px rgba(15, 61, 46, 0.02);
+  --shadow-md: 0 12px 32px -8px rgba(15, 61, 46, 0.08), 0 4px 12px -2px rgba(15, 61, 46, 0.03);
+  --shadow-lg: 0 24px 56px -12px rgba(15, 61, 46, 0.12), 0 8px 24px -4px rgba(15, 61, 46, 0.04);
+  --shadow-floating: 0 32px 72px -16px rgba(15, 61, 46, 0.16);
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 9999px;
+
+  /* Transitions */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+}
+

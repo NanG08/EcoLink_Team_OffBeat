@@ -1,0 +1,4 @@
+aws-cdk-lib>=2.170,<3
+constructs>=10.0.0,<11
+# used by the deploy-time scripts (put_secrets.py, seed.py, reset.py, smoke_test.py)
+boto3>=1.35

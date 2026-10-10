@@ -1,0 +1,32 @@
+# Central class configuration — single source of truth for EcoLink vision pipeline.
+# Do NOT change the order or IDs; they are baked into trained model weights.
+
+class_names:
+  - paper
+  - cardboard
+  - plastic
+  - metal
+  - glass
+  - ewaste
+  - battery
+
+# Stable numeric IDs (must never change after training)
+class_ids:
+  paper:     0
+  cardboard: 1
+  plastic:   2
+  metal:     3
+  glass:     4
+  ewaste:    5
+  battery:   6
+
+# Classes that require authorised drop-off; never a normal pickup
+hazardous_classes:
+  - ewaste
+  - battery
+
+# Confidence thresholds used by safety.py and inference.py
+confidence_thresholds:
+  high:    0.80   # ConfidenceLevel.HIGH — single confirmation skipped
+  medium:  0.50   # ConfidenceLevel.MEDIUM — included in response, may prompt confirmation
+  discard: 0.0    # below detection_threshold from inference.yaml → filtered

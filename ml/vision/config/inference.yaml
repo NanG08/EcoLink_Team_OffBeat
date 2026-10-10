@@ -1,0 +1,27 @@
+# Inference configuration for EcoLink YOLOv8n waste detection pipeline.
+
+model:
+  weights_path: ml/vision/artifacts/weights/best.pt
+  image_size: 416   # must equal the --imgsz the weights were trained at (best.pt: 416)
+  device: auto   # "auto" → cuda if available, else cpu
+
+confidence:
+  # Minimum confidence to include a detection in the API response
+  detection_threshold: 0.50
+  # At or above this level → ConfidenceLevel.HIGH (no extra confirmation needed)
+  high_confidence_threshold: 0.80
+  # Hazardous detections below this require explicit user confirmation
+  hazardous_confirmation_threshold: 0.70
+
+nms:
+  iou_threshold: 0.45
+  max_detections: 50
+
+preprocessing:
+  max_image_bytes: 5242880   # 5 MB
+  allowed_formats:
+    - jpeg
+    - jpg
+    - png
+    - webp
+  convert_to_rgb: true

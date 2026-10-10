@@ -1,0 +1,155 @@
+# Dataset class mapping — maps raw source-dataset class names to EcoLink canonical classes.
+# Values must be one of: paper, cardboard, plastic, metal, glass, ewaste, battery, or null.
+# null means the class is discarded (not mapped to any EcoLink class).
+#
+# Edit this file when adding a new source dataset. Never change the canonical class names.
+
+mappings:
+  # ── PLASTIC ─────────────────────────────────────────────────────────────────
+  plastic_bottle:        plastic
+  plastic_bag:           plastic
+  plastic_container:     plastic
+  plastic_cup:           plastic
+  plastic_film:          plastic
+  plastic_lid:           plastic
+  plastic_straw:         plastic
+  plastic_utensil:       plastic
+  plastic_fork:          plastic
+  plastic_knife:         plastic
+  plastic_spoon:         plastic
+  plastic_wrap:          plastic
+  polystyrene:           plastic
+  styrofoam:             plastic
+  six_pack_rings:        plastic
+  blister_pack:          plastic
+  crisp_packet:          plastic
+  # TrashNet
+  plastic:               plastic
+
+  # ── GLASS ───────────────────────────────────────────────────────────────────
+  glass_bottle:          glass
+  glass_jar:             glass
+  glass_cup:             glass
+  glass_container:       glass
+  broken_glass:          glass
+  wine_bottle:           glass
+  beer_bottle:           glass
+  # TrashNet
+  glass:                 glass
+
+  # ── METAL ───────────────────────────────────────────────────────────────────
+  drink_can:             metal
+  aluminium_can:         metal
+  aluminum_can:          metal
+  metal_can:             metal
+  tin_can:               metal
+  can:                   metal
+  scrap_metal:           metal
+  metal_lid:             metal
+  metal_bottle_cap:      metal
+  foil:                  metal
+  aluminium_foil:        metal
+  steel:                 metal
+  # TrashNet
+  metal:                 metal
+
+  # ── PAPER ───────────────────────────────────────────────────────────────────
+  paper:                 paper
+  newspaper:             paper
+  magazine:              paper
+  paper_bag:             paper
+  paper_cup:             paper
+  paper_plate:           paper
+  tissue:                paper
+  tissue_paper:          paper
+  napkin:                paper
+  receipt:               paper
+  envelope:              paper
+  book:                  paper
+  notebook:              paper
+  # TrashNet
+  trash:                 null
+
+  # ── CARDBOARD ───────────────────────────────────────────────────────────────
+  cardboard:             cardboard
+  cardboard_box:         cardboard
+  cardboard_sheet:       cardboard
+  pizza_box:             cardboard
+  egg_carton:            cardboard
+  juice_carton:          cardboard
+  milk_carton:           cardboard
+  tetra_pak:             cardboard
+  # TrashNet
+  # (cardboard already mapped above)
+
+  # ── EWASTE ──────────────────────────────────────────────────────────────────
+  smartphone:            ewaste
+  mobile_phone:          ewaste
+  cell_phone:            ewaste
+  phone:                 ewaste
+  laptop:                ewaste
+  computer:              ewaste
+  desktop_computer:      ewaste
+  monitor:               ewaste
+  tv:                    ewaste
+  television:            ewaste
+  keyboard:              ewaste
+  mouse:                 ewaste
+  printer:               ewaste
+  scanner:               ewaste
+  tablet:                ewaste
+  camera:                ewaste
+  headphones:            ewaste
+  earphones:             ewaste
+  charger:               ewaste
+  cable:                 ewaste
+  power_bank:            ewaste
+  electronic_device:     ewaste
+  circuit_board:         ewaste
+  hard_drive:            ewaste
+  cpu:                   ewaste
+  remote_control:        ewaste
+  router:                ewaste
+  modem:                 ewaste
+  # OpenImages e-waste
+  electrical_cable:      ewaste
+  electronic_equipment:  ewaste
+
+  # ── BATTERY ─────────────────────────────────────────────────────────────────
+  battery:               battery
+  batteries:             battery
+  aa_battery:            battery
+  aaa_battery:           battery
+  d_battery:             battery
+  button_cell:           battery
+  lithium_battery:       battery
+  # power_bank already → ewaste (contains battery but is e-waste category)
+
+  # ── OpenImages general labels ────────────────────────────────────────────────
+  bottle:                plastic   # default to plastic if type unknown; override per dataset
+  container:             plastic
+  bag:                   plastic
+  cup:                   plastic
+
+  # ── WasteNet ────────────────────────────────────────────────────────────────
+  bio:                   null
+  non_recyclable:        null
+  recyclable:            null   # too generic; needs sub-class
+
+# Classes to discard entirely (map to null / skip annotation)
+discard:
+  - food
+  - organic
+  - compost
+  - biohazard
+  - medical
+  - soil
+  - dirt
+  - liquid
+  - background
+  - unknown
+  - unlabelled
+  - unlabeled
+  - other
+  - misc
+  - miscellaneous

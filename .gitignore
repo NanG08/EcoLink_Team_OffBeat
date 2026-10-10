@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+infra/cdk.out/
+cdk.out/
+node_modules/
+.pytest_cache/
+.DS_Store
+.env

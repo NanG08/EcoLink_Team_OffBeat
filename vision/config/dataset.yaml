@@ -1,0 +1,18 @@
+# YOLO-compatible dataset descriptor.
+# Used by ultralytics during training and evaluation.
+
+path: ml/vision/data
+train: train/images
+val:   val/images
+test:  test/images
+
+nc: 7
+
+names:
+  0: paper
+  1: cardboard
+  2: plastic
+  3: metal
+  4: glass
+  5: ewaste
+  6: battery

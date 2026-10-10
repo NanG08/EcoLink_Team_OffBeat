@@ -1,0 +1,17 @@
+# Downloaded / generated datasets (rebuild with scripts/fetch_public_datasets.py + prepare_dataset.py)
+data/raw/*
+!data/raw/.gitkeep
+data/*/images/*
+data/*/labels/*
+!data/*/images/.gitkeep
+!data/*/labels/.gitkeep
+data/*/labels.cache
+
+# Training / evaluation run outputs (best.pt and metrics/*.json stay committable)
+artifacts/train*/
+artifacts/notebook_runs/
+artifacts/eval_runs/
+artifacts/logs/
+artifacts/*.resolved.yaml
+artifacts/weights/yolov8n.pt
+artifacts/weights/yolo11n.pt

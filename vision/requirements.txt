@@ -1,0 +1,23 @@
+# EcoLink Vision ML Pipeline Dependencies
+#
+# CPU-only torch install (smaller download — do this first):
+#   pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cpu
+#
+# Then install the rest:
+#   pip install -r ml/vision/requirements.txt
+#
+# One-shot CPU-only install:
+#   pip install torch==2.5.1+cpu torchvision==0.20.1+cpu --index-url https://download.pytorch.org/whl/cpu
+#   pip install ultralytics==8.3.40 Pillow==10.4.0 numpy==1.26.4 PyYAML==6.0.2 requests==2.32.3 psutil==6.1.0 matplotlib==3.9.2 seaborn==0.13.2 tqdm==4.67.0
+
+ultralytics==8.3.40
+torch==2.5.1
+torchvision==0.20.1
+Pillow==10.4.0
+numpy==1.26.4
+PyYAML==6.0.2
+requests==2.32.3
+psutil==6.1.0
+matplotlib==3.9.2
+seaborn==0.13.2
+tqdm==4.67.0

@@ -1,0 +1,16 @@
+{
+  "model_size_mb": 5.92,
+  "model_load_ms": 73.6,
+  "cold_start_ms": 2120.4,
+  "warm_runs": 50,
+  "mean_ms": 112.31,
+  "p50_ms": 115.34,
+  "p95_ms": 147.94,
+  "p99_ms": 158.64,
+  "min_ms": 68.29,
+  "max_ms": 156.33,
+  "throughput_images_per_sec": 8.9,
+  "peak_memory_mb": 1.49,
+  "image_size": 416,
+  "device": "cpu"
+}

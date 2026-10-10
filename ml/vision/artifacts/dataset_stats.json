@@ -1,0 +1,52 @@
+{
+  "total_images": 699,
+  "total_objects": 718,
+  "objects_per_class": {
+    "paper": 0,
+    "cardboard": 0,
+    "plastic": 0,
+    "metal": 0,
+    "glass": 0,
+    "ewaste": 0,
+    "battery": 718
+  },
+  "images_per_class": {
+    "paper": 0,
+    "cardboard": 0,
+    "plastic": 0,
+    "metal": 0,
+    "glass": 0,
+    "ewaste": 0,
+    "battery": 699
+  },
+  "train_images": 559,
+  "val_images": 69,
+  "test_images": 71,
+  "train_objects_per_class": {
+    "paper": 0,
+    "cardboard": 0,
+    "plastic": 0,
+    "metal": 0,
+    "glass": 0,
+    "ewaste": 0,
+    "battery": 574
+  },
+  "val_objects_per_class": {
+    "paper": 0,
+    "cardboard": 0,
+    "plastic": 0,
+    "metal": 0,
+    "glass": 0,
+    "ewaste": 0,
+    "battery": 73
+  },
+  "test_objects_per_class": {
+    "paper": 0,
+    "cardboard": 0,
+    "plastic": 0,
+    "metal": 0,
+    "glass": 0,
+    "ewaste": 0,
+    "battery": 71
+  }
+}

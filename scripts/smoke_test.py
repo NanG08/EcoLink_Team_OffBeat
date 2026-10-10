@@ -160,7 +160,7 @@ def main() -> int:
         status, body = api.call("POST", "/classify", {"image_url": up["image_url"]})
         need(status == 200, f"classify failed: {status} {body}")
         need(all(i["label"] in LABELS and 0 <= i["confidence"] <= 1 for i in body["items"]), f"bad items: {body}")
-        print(f"      (Bedrock saw a plain green square and returned {body['items']})")
+        print(f"      (classifier '{body.get('source', '?')}' saw a plain green square and returned {body['items']})")
 
     def pickup_lifecycle_and_state_machine():
         status, body = api.call("POST", "/pickups", {

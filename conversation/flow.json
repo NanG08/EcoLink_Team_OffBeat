@@ -1,0 +1,578 @@
+{
+  "id": "ecolink.whatsapp.v1",
+  "version": "1.0.0",
+  "description": "EcoLink WhatsApp conversation state machine. Every user-facing message references a key in templates.json. API calls use the contract field names exactly.",
+  "initial_state": "start",
+  "languages": ["en", "hi"],
+  "default_language": "en",
+
+  "conventions": {
+    "trigger_syntax": {
+      "button:<id>": "User tapped a quick-reply button with this id (ids are identical in en and hi).",
+      "list:<id>": "User picked a row from a WhatsApp list message.",
+      "intent:<name>": "Free text classified into an intent (see intents).",
+      "event:<name>": "Inbound non-text event (image, location) or a backend event (voice response, timer).",
+      "api:<outcome>": "Outcome of the state's api_call (ok, error, or a named result branch).",
+      "timeout": "No user reply within the state's timeout (see silence_policy).",
+      "else": "Fallback when no other trigger matches."
+    },
+    "guards": "Boolean expressions over ctx.* evaluated in order; first matching transition wins.",
+    "actions": "Side effects run before entering the target state, in order.",
+    "whatsapp_limits": {
+      "max_reply_buttons": 3,
+      "button_title_max_chars": 20,
+      "list_rows_max": 10,
+      "list_row_title_max_chars": 24,
+      "body_max_chars_project_rule": 300
+    }
+  },
+
+  "context_schema": {
+    "user_id": "string. WhatsApp number in E.164, used as user_id in API calls.",
+    "lang": "\"en\" | \"hi\"",
+    "path": "\"regular\" | \"ewaste\" | null",
+    "image_url": "string | null. Private pre-signed S3 URL; the object expires after 7 days (lifecycle rule). Never forwarded to recyclers.",
+    "items": "[{label, confidence, hazardous, weight_kg?}] from POST /classify, after user correction.",
+    "hazard_items": "Subset of items where hazardous == true OR label in [battery, ewaste].",
+    "safe_items": "Items that are not hazardous; only these may be booked for pickup.",
+    "weight_kg": "number. Total estimated weight, default 1.0 if the user skips.",
+    "price": "{low, high, currency, updated} summed over safe_items via GET /price.",
+    "address_text": "string | null. Stored on the pickup only; never sent to a recycler before status == confirmed.",
+    "lat": "number | null", "lng": "number | null",
+    "slot": "ISO 8601 datetime with +05:30 offset, e.g. 2026-10-09T10:00:00+05:30.",
+    "pickup_id": "string | null",
+    "candidates": "[{recycler_id, name, distance_km, accepts}] from GET /recyclers/match, nearest first.",
+    "offer_index": "int. Which candidate is currently being phoned (0-based).",
+    "ewaste": "{item_type, age_years, condition}",
+    "quote": "{low, high, recommendation}",
+    "retries": "map of state -> attempt count; reset on leaving the state.",
+    "confirmed": "bool. True ONLY after intent:yes inside pickup_confirm. Required by create_pickup."
+  },
+
+  "intents": {
+    "yes":      { "en": ["yes", "y", "yeah", "yep", "ok", "okay", "sure", "confirm", "book it"], "hi": ["हाँ", "हां", "haan", "han", "ha", "ji", "जी", "ठीक है", "theek hai", "bilkul", "पक्का"] },
+    "no":       { "en": ["no", "n", "nope", "not now", "later", "cancel"], "hi": ["नहीं", "nahi", "nahin", "na", "मत करो", "abhi nahi", "रद्द"] },
+    "menu":     { "en": ["menu", "start", "restart", "hi", "hello"], "hi": ["मेनू", "शुरू", "namaste", "नमस्ते"] },
+    "help":     { "en": ["help", "?"], "hi": ["मदद", "madad", "help"] },
+    "language": { "en": ["english", "hindi", "language"], "hi": ["हिंदी", "भाषा", "english"] },
+    "stop":     { "en": ["stop", "unsubscribe"], "hi": ["बंद करो", "band karo", "रोको"] }
+  },
+
+  "label_synonyms": {
+    "paper":     ["paper", "newspaper", "akhbaar", "akhbar", "अख़बार", "अखबार", "कागज़", "kagaz", "books", "copy", "magazine"],
+    "cardboard": ["cardboard", "carton", "box", "gatta", "गत्ता", "डिब्बा", "dabba"],
+    "plastic":   ["plastic", "bottle", "pet", "polythene", "प्लास्टिक", "बोतल", "botal", "bucket"],
+    "metal":     ["metal", "iron", "steel", "aluminium", "can", "loha", "लोहा", "धातु", "tin", "टीन", "copper", "tamba"],
+    "glass":     ["glass", "jar", "kaanch", "काँच", "कांच", "शीशा", "sheesha"],
+    "ewaste":    ["ewaste", "e-waste", "mobile", "phone", "laptop", "charger", "wire", "tv", "मोबाइल", "चार्जर", "तार"],
+    "battery":   ["battery", "batteries", "cell", "बैटरी", "सेल", "inverter battery", "power bank"]
+  },
+
+  "thresholds": {
+    "confidence_accept": 0.75,
+    "confidence_ask": 0.5,
+    "max_photo_retries": 2,
+    "max_confirm_reprompts": 2,
+    "max_recycler_offers": 3,
+    "default_weight_kg": 1.0,
+    "weight_buckets_kg": { "w_small": 1.5, "w_medium": 3.5, "w_large": 8.0 },
+    "age_buckets_years": { "age_lt2": 1, "age_2to5": 3, "age_gt5": 7 }
+  },
+
+  "silence_policy": {
+    "applies_to": "Every state with awaits_user = true unless the state overrides it.",
+    "nudge_after_seconds": 1800,
+    "nudge_template": "silence_nudge",
+    "max_nudges": 1,
+    "expire_after_seconds": 82800,
+    "expire_template": "session_expired",
+    "expire_action": "clear ctx except user_id, lang, address_text, lat, lng; go to start on next message",
+    "whatsapp_24h_window_note": "Free-form messages are only allowed within 24 h of the user's last message. silence_nudge (30 min) is free-form; session_expired is sent at 23 h so it is still inside the window. Anything later (e.g. a recycler accepting after 24 h) must use a pre-approved WhatsApp utility template."
+  },
+
+  "global_transitions": [
+    { "on": "intent:stop",     "actions": ["mark_opted_out"],               "to": "opted_out" },
+    { "on": "intent:menu",     "guard": "state not in ['awaiting_recycler', 'pickup_booked']", "actions": ["reset_flow_keep_profile"], "to": "choose_path" },
+    { "on": "intent:help",     "actions": ["send:help"],                    "to": "@same" },
+    { "on": "intent:language", "actions": ["toggle_lang", "send:language_switched"], "to": "@same" },
+    { "on": "event:api_error", "actions": ["log_error", "send:error_generic"], "to": "@same" }
+  ],
+
+  "states": {
+
+    "start": {
+      "description": "First contact or new session. Ask for language.",
+      "awaits_user": true,
+      "on_enter": { "send": "welcome_language" },
+      "transitions": [
+        { "on": "button:lang_en", "actions": ["set:lang=en"], "to": "choose_path" },
+        { "on": "button:lang_hi", "actions": ["set:lang=hi"], "to": "choose_path" },
+        { "on": "event:image", "actions": ["detect_lang_from_text_or_default", "set:path=regular", "store_image"], "to": "classifying" },
+        { "on": "else", "actions": ["detect_lang_from_text (>10% Devanagari => hi)"], "to": "choose_path" }
+      ]
+    },
+
+    "choose_path": {
+      "description": "Main menu: regular waste or e-waste.",
+      "awaits_user": true,
+      "on_enter": { "send": "path_choice" },
+      "transitions": [
+        { "on": "button:path_regular", "actions": ["set:path=regular"], "to": "await_photo" },
+        { "on": "button:path_ewaste",  "actions": ["set:path=ewaste"],  "to": "ewaste_item" },
+        { "on": "event:image",         "actions": ["set:path=regular", "store_image"], "to": "classifying" },
+        { "on": "else", "guard": "text matches label_synonyms.ewaste or label_synonyms.battery", "actions": ["set:path=ewaste"], "to": "ewaste_item" },
+        { "on": "else", "actions": ["send:not_understood"], "to": "choose_path" }
+      ]
+    },
+
+    "await_photo": {
+      "description": "Ask for one clear photo of the waste.",
+      "awaits_user": true,
+      "on_enter": { "send": "photo_request" },
+      "transitions": [
+        { "on": "event:image", "actions": ["store_image (private S3, 7-day expiry)", "send:photo_received"], "to": "classifying" },
+        { "on": "button:type_items", "to": "correct_items" },
+        { "on": "intent:no", "to": "user_declined" },
+        { "on": "else", "guard": "retries.await_photo < thresholds.max_photo_retries", "actions": ["inc_retry", "send:photo_reminder"], "to": "await_photo", "note": "re-entry does not resend photo_request" },
+        { "on": "else", "to": "correct_items" }
+      ]
+    },
+
+    "classifying": {
+      "description": "System state. Classify the photo.",
+      "awaits_user": false,
+      "api_call": { "method": "POST", "path": "/classify", "body": { "image_url": "ctx.image_url" }, "response": "{items:[{label, confidence, hazardous}]}" },
+      "transitions": [
+        { "on": "api:error", "actions": ["send:error_generic"], "to": "await_photo" },
+        { "on": "api:ok", "guard": "items.length == 0 || max(items.confidence) < thresholds.confidence_ask", "branch": "blurry_or_unknown", "to": "photo_unclear" },
+        { "on": "api:ok", "guard": "any(item.hazardous || item.label in ['battery','ewaste'])", "actions": ["drop items below confidence_ask", "split_items -> hazard_items, safe_items"], "to": "hazard_dropoff" },
+        { "on": "api:ok", "actions": ["drop items below confidence_ask", "set:safe_items=items"], "to": "confirm_items" }
+      ]
+    },
+
+    "photo_unclear": {
+      "description": "EDGE CASE: blurry photo or nothing recognisable.",
+      "awaits_user": true,
+      "on_enter": {
+        "send_if": [
+          { "guard": "retries.photo_unclear < thresholds.max_photo_retries", "send": "photo_blurry" },
+          { "guard": "else", "send": "photo_retry_limit" }
+        ]
+      },
+      "transitions": [
+        { "on": "event:image", "actions": ["inc_retry", "store_image", "send:photo_received"], "to": "classifying" },
+        { "on": "button:type_items", "to": "correct_items" },
+        { "on": "button:menu", "to": "choose_path" },
+        { "on": "else", "to": "correct_items", "note": "Treat typed text as an item list." }
+      ]
+    },
+
+    "confirm_items": {
+      "description": "Show detected items and ask the user to confirm or correct them.",
+      "awaits_user": true,
+      "on_enter": {
+        "send_if": [
+          { "guard": "all(item.confidence >= thresholds.confidence_accept)", "send": "items_found" },
+          { "guard": "else", "send": "items_unsure" }
+        ]
+      },
+      "transitions": [
+        { "on": "button:items_ok",  "to": "ask_weight" },
+        { "on": "intent:yes",       "to": "ask_weight" },
+        { "on": "button:items_fix", "to": "correct_items" },
+        { "on": "button:new_photo", "to": "await_photo" },
+        { "on": "event:image",      "actions": ["store_image"], "to": "classifying" },
+        { "on": "intent:no",        "to": "correct_items" },
+        { "on": "else",             "to": "correct_items", "note": "Free text here is almost always a correction, e.g. 'no, it is glass'." }
+      ]
+    },
+
+    "correct_items": {
+      "description": "User types the items. Parsed with label_synonyms (English, Hindi, Hinglish).",
+      "awaits_user": true,
+      "on_enter": { "send": "correct_items_prompt" },
+      "transitions": [
+        { "on": "else", "guard": "parsed_labels.length == 0", "actions": ["send:unknown_item"], "to": "correct_items", "note": "EDGE CASE: unknown item. After 2 misses offer the menu." },
+        { "on": "else", "guard": "any(parsed label in ['battery','ewaste'])", "actions": ["set:items=parsed (confidence=1.0, hazardous by label)", "split_items"], "to": "hazard_dropoff" },
+        { "on": "else", "actions": ["set:items=parsed (confidence=1.0)", "set:safe_items=items"], "to": "confirm_items" }
+      ]
+    },
+
+    "hazard_dropoff": {
+      "description": "EDGE CASE: battery / e-waste found. ALWAYS safe drop-off, never a regular pickup.",
+      "awaits_user": true,
+      "on_enter": {
+        "send_if": [
+          { "guard": "safe_items.length > 0", "send": "hazard_warning_mixed" },
+          { "guard": "else", "send": "hazard_warning" }
+        ]
+      },
+      "rules": ["create_pickup must never receive a hazardous label; backend also rejects with 422 hazardous_items_blocked"],
+      "transitions": [
+        { "on": "button:show_dropoff", "to": "dropoff_points" },
+        { "on": "intent:yes",          "to": "dropoff_points" },
+        { "on": "button:book_rest",    "guard": "safe_items.length > 0", "actions": ["set:items=safe_items"], "to": "ask_weight" },
+        { "on": "button:menu",         "to": "choose_path" },
+        { "on": "intent:no",           "to": "user_declined" }
+      ]
+    },
+
+    "ask_weight": {
+      "description": "Optional rough weight so the estimate is meaningful.",
+      "awaits_user": true,
+      "on_enter": { "send": "weight_ask" },
+      "transitions": [
+        { "on": "button:w_small",  "actions": ["set:weight_kg=1.5"], "to": "pricing" },
+        { "on": "button:w_medium", "actions": ["set:weight_kg=3.5"], "to": "pricing" },
+        { "on": "button:w_large",  "actions": ["set:weight_kg=8.0"], "to": "pricing" },
+        { "on": "else", "guard": "text parses as number 0 < n <= 1000", "actions": ["set:weight_kg=n"], "to": "pricing" },
+        { "on": "else", "actions": ["set:weight_kg=thresholds.default_weight_kg"], "to": "pricing" }
+      ]
+    },
+
+    "pricing": {
+      "description": "System state. One GET /price per safe label, weight split evenly; sum low/high.",
+      "awaits_user": false,
+      "api_call": { "method": "GET", "path": "/price", "query": { "label": "item.label", "weight_kg": "ctx.weight_kg / safe_items.length" }, "repeat_for": "safe_items", "response": "{low, high, currency:\"INR\", updated}" },
+      "transitions": [
+        { "on": "api:error", "actions": ["send:error_generic"], "to": "confirm_items" },
+        { "on": "api:ok", "actions": ["set:price={low:sum, high:sum, currency:'INR'}"], "to": "price_shown" }
+      ]
+    },
+
+    "price_shown": {
+      "description": "Tip + estimated range (always labelled ESTIMATE). Offer pickup.",
+      "awaits_user": true,
+      "on_enter": { "send": "price_display" },
+      "transitions": [
+        { "on": "button:want_pickup", "guard": "address_text != null", "to": "address_confirm" },
+        { "on": "button:want_pickup", "to": "address_ask" },
+        { "on": "intent:yes",         "guard": "address_text != null", "to": "address_confirm" },
+        { "on": "intent:yes",         "to": "address_ask" },
+        { "on": "button:not_now",     "to": "user_declined" },
+        { "on": "intent:no",          "to": "user_declined" }
+      ]
+    },
+
+    "address_confirm": {
+      "description": "Returning user: reuse saved address?",
+      "awaits_user": true,
+      "on_enter": { "send": "address_confirm" },
+      "transitions": [
+        { "on": "button:addr_same", "to": "slot_choice" },
+        { "on": "intent:yes",       "to": "slot_choice" },
+        { "on": "button:addr_new",  "actions": ["clear:address_text,lat,lng"], "to": "address_ask" }
+      ]
+    },
+
+    "address_ask": {
+      "description": "Collect address text and, ideally, a location pin (used for recycler matching).",
+      "awaits_user": true,
+      "on_enter": { "send": "address_ask" },
+      "transitions": [
+        { "on": "event:location", "actions": ["set:lat,lng", "set:address_text=location.address || 'Pinned location'"], "to": "address_details" },
+        { "on": "else", "guard": "text.length >= 10", "actions": ["set:address_text=text", "geocode_best_effort -> lat,lng"], "to": "slot_choice" },
+        { "on": "else", "actions": ["send:address_too_short"], "to": "address_ask" }
+      ]
+    },
+
+    "address_details": {
+      "description": "After a pin, ask for flat / house number so the recycler can find the door.",
+      "awaits_user": true,
+      "on_enter": { "send": "address_details_ask" },
+      "transitions": [
+        { "on": "else", "actions": ["set:address_text=text + ', ' + address_text"], "to": "slot_choice" }
+      ]
+    },
+
+    "slot_choice": {
+      "description": "Pick a pickup window. List of the next 6 windows (morning 9-12, evening 4-7), skipping past ones.",
+      "awaits_user": true,
+      "on_enter": { "send": "slot_choose", "list_rows": "generate_slots(days=3, windows=['09:00','16:00'])" },
+      "transitions": [
+        { "on": "list:slot_*", "actions": ["set:slot=row.value (ISO 8601 +05:30)"], "to": "pickup_confirm" },
+        { "on": "else", "actions": ["send:not_understood"], "to": "slot_choice" }
+      ]
+    },
+
+    "pickup_confirm": {
+      "description": "FINAL CONFIRMATION. Nothing is booked until an explicit yes here.",
+      "awaits_user": true,
+      "on_enter": { "send": "pickup_confirm" },
+      "rules": [
+        "ctx.confirmed is set to true ONLY by button:confirm_yes or intent:yes in this state.",
+        "Ambiguous replies re-ask; they never book."
+      ],
+      "transitions": [
+        { "on": "button:confirm_yes",  "actions": ["set:confirmed=true"], "to": "creating_pickup" },
+        { "on": "intent:yes",          "actions": ["set:confirmed=true"], "to": "creating_pickup" },
+        { "on": "button:change_slot",  "to": "slot_choice" },
+        { "on": "button:confirm_no",   "to": "user_declined" },
+        { "on": "intent:no",           "to": "user_declined" },
+        { "on": "else", "guard": "retries.pickup_confirm < thresholds.max_confirm_reprompts", "actions": ["inc_retry", "send:confirm_reprompt"], "to": "pickup_confirm" },
+        { "on": "else", "to": "user_declined" }
+      ]
+    },
+
+    "creating_pickup": {
+      "description": "System state. Create the pickup, find recyclers, phone the nearest.",
+      "awaits_user": false,
+      "guard_required": "ctx.confirmed == true && safe_items has no hazardous label",
+      "api_calls": [
+        { "id": "create", "method": "POST", "path": "/pickups", "body": { "user_id": "ctx.user_id", "items": "safe_items -> [{label, weight_kg}]", "address_text": "ctx.address_text", "slot": "ctx.slot" }, "response": "{pickup_id}" },
+        { "id": "match",  "method": "GET",  "path": "/recyclers/match", "query": { "lat": "ctx.lat", "lng": "ctx.lng", "labels": "safe labels joined by ','" }, "response": "[{recycler_id, name, distance_km, accepts}]" },
+        { "id": "offer",  "method": "POST", "path": "/voice/offer", "body": { "pickup_id": "ctx.pickup_id", "recycler_id": "candidates[offer_index].recycler_id" }, "note": "Recycler hears items, distance and slot only. NO address." }
+      ],
+      "on_enter": { "send": "pickup_booking" },
+      "transitions": [
+        { "on": "api:create.error", "guard": "error.code == 'hazardous_items_blocked'", "to": "hazard_dropoff" },
+        { "on": "api:create.error", "actions": ["set:confirmed=false", "send:error_generic"], "to": "pickup_confirm" },
+        { "on": "api:match.ok", "guard": "candidates.length == 0", "to": "no_recycler" },
+        { "on": "api:offer.ok", "actions": ["set:offer_index=0"], "to": "awaiting_recycler" },
+        { "on": "api:offer.error", "guard": "offer_index + 1 < min(candidates.length, thresholds.max_recycler_offers)", "actions": ["inc:offer_index", "retry:offer"], "to": "creating_pickup" },
+        { "on": "api:offer.error", "to": "no_recycler" }
+      ]
+    },
+
+    "awaiting_recycler": {
+      "description": "Pickup is 'offered'. Waiting for the recycler to press 1 or 2 (POST /voice/response).",
+      "awaits_user": false,
+      "on_enter": { "send": "pickup_requested" },
+      "silence_policy": "disabled (we are waiting on the recycler, not the user)",
+      "transitions": [
+        { "on": "event:voice_response", "guard": "digit == '1'", "note": "Backend moves status to confirmed and sends both confirmations (backend/ecolink/core/pickup_service.py).", "to": "pickup_booked" },
+        { "on": "event:voice_response", "guard": "digit == '2' && offer_index + 1 < min(candidates.length, thresholds.max_recycler_offers)", "actions": ["inc:offer_index", "send:recycler_trying_next", "api:POST /voice/offer next candidate"], "to": "awaiting_recycler" },
+        { "on": "event:voice_no_answer", "guard": "offer_index + 1 < min(candidates.length, thresholds.max_recycler_offers)", "actions": ["api:PATCH /pickups/{id} {status:'declined'}", "inc:offer_index", "send:recycler_trying_next", "api:POST /voice/offer next candidate"], "to": "awaiting_recycler" },
+        { "on": "event:voice_response", "guard": "digit == '2'", "to": "no_recycler" },
+        { "on": "event:voice_no_answer", "to": "no_recycler" },
+        { "on": "button:cancel_pickup", "actions": ["api:PATCH /pickups/{id} {status:'cancelled'}"], "to": "pickup_cancelled" }
+      ]
+    },
+
+    "pickup_booked": {
+      "description": "Recycler accepted. User gets the confirmation; the recycler now (and only now) gets the address.",
+      "awaits_user": true,
+      "on_enter": { "send": "pickup_confirmed_user", "also_send_to_recycler": "recycler_pickup_details" },
+      "silence_policy": "disabled",
+      "transitions": [
+        { "on": "button:cancel_pickup", "actions": ["api:PATCH /pickups/{id} {status:'cancelled'}"], "to": "pickup_cancelled" },
+        { "on": "button:menu", "actions": ["reset_flow_keep_profile"], "to": "choose_path" },
+        { "on": "event:pickup_completed", "actions": ["send:pickup_completed"], "to": "done" }
+      ]
+    },
+
+    "no_recycler": {
+      "description": "Nobody accepted / nobody nearby. Pickup stays 'requested' for the ops team on the dashboard.",
+      "awaits_user": true,
+      "on_enter": { "send": "recycler_unavailable" },
+      "transitions": [
+        { "on": "button:change_slot",   "actions": ["api:PATCH /pickups/{id} {status:'cancelled'}", "clear:pickup_id,confirmed"], "to": "slot_choice" },
+        { "on": "button:cancel_pickup", "actions": ["api:PATCH /pickups/{id} {status:'cancelled'}"], "to": "pickup_cancelled" },
+        { "on": "button:wait",          "to": "done" }
+      ]
+    },
+
+    "pickup_cancelled": {
+      "awaits_user": true,
+      "on_enter": { "send": "pickup_cancelled" },
+      "transitions": [ { "on": "else", "actions": ["reset_flow_keep_profile"], "to": "choose_path" } ]
+    },
+
+    "user_declined": {
+      "description": "EDGE CASE: user says no. Be gracious, keep the door open, no further prompts.",
+      "awaits_user": true,
+      "on_enter": { "send": "user_said_no" },
+      "silence_policy": "disabled",
+      "transitions": [
+        { "on": "button:menu",       "actions": ["reset_flow_keep_profile"], "to": "choose_path" },
+        { "on": "button:want_pickup", "guard": "price != null", "to": "address_ask" },
+        { "on": "event:image",       "actions": ["set:path=regular", "store_image"], "to": "classifying" },
+        { "on": "else",              "actions": ["reset_flow_keep_profile"], "to": "choose_path" }
+      ]
+    },
+
+    "ewaste_item": {
+      "description": "E-waste Q1: which item?",
+      "awaits_user": true,
+      "on_enter": { "send": "ewaste_item_ask" },
+      "transitions": [
+        { "on": "list:ew_battery", "actions": ["set:ewaste.item_type=battery", "set:hazard_items=[{label:'battery'}]", "set:safe_items=[]"], "to": "hazard_dropoff" },
+        { "on": "list:ew_other",   "to": "ewaste_other" },
+        { "on": "list:ew_*",       "actions": ["set:ewaste.item_type=row.value"], "to": "ewaste_age" },
+        { "on": "else", "guard": "text matches label_synonyms.battery", "actions": ["set:hazard_items=[{label:'battery'}]", "set:safe_items=[]"], "to": "hazard_dropoff" },
+        { "on": "else", "actions": ["set:ewaste.item_type=map_text_to_item_type(text) || 'other'"], "to": "ewaste_age" }
+      ]
+    },
+
+    "ewaste_other": {
+      "awaits_user": true,
+      "on_enter": { "send": "ewaste_other_ask" },
+      "transitions": [
+        { "on": "else", "guard": "text matches label_synonyms.battery", "actions": ["set:hazard_items=[{label:'battery'}]", "set:safe_items=[]"], "to": "hazard_dropoff" },
+        { "on": "else", "actions": ["set:ewaste.item_type=map_text_to_item_type(text) || 'other'", "set:ewaste.item_name=text"], "to": "ewaste_age" }
+      ]
+    },
+
+    "ewaste_age": {
+      "description": "E-waste Q2: how old?",
+      "awaits_user": true,
+      "on_enter": { "send": "ewaste_age_ask" },
+      "transitions": [
+        { "on": "button:age_lt2",  "actions": ["set:ewaste.age_years=1"], "to": "ewaste_condition" },
+        { "on": "button:age_2to5", "actions": ["set:ewaste.age_years=3"], "to": "ewaste_condition" },
+        { "on": "button:age_gt5",  "actions": ["set:ewaste.age_years=7"], "to": "ewaste_condition" },
+        { "on": "else", "guard": "text parses as number 0 <= n <= 50", "actions": ["set:ewaste.age_years=n"], "to": "ewaste_condition" },
+        { "on": "else", "actions": ["send:not_understood"], "to": "ewaste_age" }
+      ]
+    },
+
+    "ewaste_condition": {
+      "description": "E-waste Q3: condition.",
+      "awaits_user": true,
+      "on_enter": { "send": "ewaste_condition_ask" },
+      "transitions": [
+        { "on": "button:cond_working", "actions": ["set:ewaste.condition=working"], "to": "ewaste_quoting" },
+        { "on": "button:cond_damaged", "actions": ["set:ewaste.condition=damaged"], "to": "ewaste_quoting" },
+        { "on": "button:cond_broken",  "actions": ["set:ewaste.condition=broken"],  "to": "ewaste_quoting" },
+        { "on": "else", "actions": ["send:not_understood"], "to": "ewaste_condition" }
+      ]
+    },
+
+    "ewaste_quoting": {
+      "awaits_user": false,
+      "api_call": { "method": "POST", "path": "/ewaste/quote", "body": { "item_type": "ctx.ewaste.item_type", "age_years": "ctx.ewaste.age_years", "condition": "ctx.ewaste.condition" }, "response": "{low, high, recommendation:'sell'|'dropoff'}" },
+      "transitions": [
+        { "on": "api:error", "actions": ["send:error_generic"], "to": "ewaste_condition" },
+        { "on": "api:ok", "guard": "recommendation == 'sell'",    "actions": ["set:quote"], "to": "ewaste_sell_decision" },
+        { "on": "api:ok", "guard": "recommendation == 'dropoff'", "actions": ["set:quote"], "to": "ewaste_dropoff_decision" }
+      ]
+    },
+
+    "ewaste_sell_decision": {
+      "description": "Worth selling. User chooses sell or drop-off.",
+      "awaits_user": true,
+      "on_enter": { "send": "ewaste_quote_sell" },
+      "transitions": [
+        { "on": "button:show_buyers",  "to": "sell_options" },
+        { "on": "intent:yes",          "to": "sell_options" },
+        { "on": "button:show_dropoff", "to": "dropoff_points" },
+        { "on": "button:not_now",      "to": "user_declined" },
+        { "on": "intent:no",           "to": "user_declined" }
+      ]
+    },
+
+    "ewaste_dropoff_decision": {
+      "description": "Not worth selling. Recommend authorised drop-off.",
+      "awaits_user": true,
+      "on_enter": { "send": "ewaste_quote_dropoff" },
+      "transitions": [
+        { "on": "button:show_dropoff", "to": "dropoff_points" },
+        { "on": "intent:yes",          "to": "dropoff_points" },
+        { "on": "button:not_now",      "to": "user_declined" },
+        { "on": "intent:no",           "to": "user_declined" }
+      ]
+    },
+
+    "need_location": {
+      "description": "Matching needs lat/lng. Ask for a location pin (WhatsApp location request).",
+      "awaits_user": true,
+      "on_enter": { "send": "location_ask" },
+      "transitions": [
+        { "on": "event:location", "actions": ["set:lat,lng"], "to": "@return" },
+        { "on": "else", "guard": "text.length >= 3", "actions": ["geocode_best_effort(text) -> lat,lng"], "to": "@return" }
+      ]
+    },
+
+    "sell_options": {
+      "description": "Authorised e-waste buyers nearby. Contact details of the user are NOT shared.",
+      "awaits_user": true,
+      "precondition": { "guard": "lat != null && lng != null", "else_goto": "need_location" },
+      "api_call": { "method": "GET", "path": "/recyclers/match", "query": { "lat": "ctx.lat", "lng": "ctx.lng", "labels": "ewaste" } },
+      "transitions": [
+        { "on": "api:ok", "guard": "result.length == 0", "actions": ["send:dropoff_none"], "to": "done" },
+        { "on": "api:ok", "actions": ["send:sell_options (top 3)"], "to": "done" },
+        { "on": "api:error", "actions": ["send:error_generic"], "to": "ewaste_sell_decision" }
+      ]
+    },
+
+    "dropoff_points": {
+      "description": "Nearest authorised drop-off points (accept ewaste and/or battery).",
+      "awaits_user": true,
+      "precondition": { "guard": "lat != null && lng != null", "else_goto": "need_location" },
+      "api_call": { "method": "GET", "path": "/recyclers/match", "query": { "lat": "ctx.lat", "lng": "ctx.lng", "labels": "hazard labels joined by ',' (default 'ewaste')" } },
+      "transitions": [
+        { "on": "api:ok", "guard": "result.length == 0", "actions": ["send:dropoff_none"], "to": "done" },
+        { "on": "api:ok", "guard": "safe_items.length > 0", "actions": ["send:dropoff_points_then_rest"], "to": "dropoff_then_rest" },
+        { "on": "api:ok", "actions": ["send:dropoff_points"], "to": "done" },
+        { "on": "api:error", "actions": ["send:error_generic"], "to": "hazard_dropoff" }
+      ]
+    },
+
+    "dropoff_then_rest": {
+      "description": "Drop-off list sent; offer to continue with the non-hazardous items.",
+      "awaits_user": true,
+      "transitions": [
+        { "on": "button:book_rest", "actions": ["set:items=safe_items"], "to": "ask_weight" },
+        { "on": "button:menu", "to": "choose_path" },
+        { "on": "else", "to": "done" }
+      ]
+    },
+
+    "done": {
+      "description": "Conversation finished. Any new message starts over.",
+      "awaits_user": true,
+      "silence_policy": "disabled",
+      "transitions": [
+        { "on": "event:image", "actions": ["reset_flow_keep_profile", "set:path=regular", "store_image"], "to": "classifying" },
+        { "on": "else", "actions": ["reset_flow_keep_profile"], "to": "choose_path" }
+      ]
+    },
+
+    "opted_out": {
+      "description": "User sent STOP. No outbound messages until they write again.",
+      "awaits_user": true,
+      "on_enter": { "send": "opt_out" },
+      "silence_policy": "disabled",
+      "transitions": [ { "on": "else", "actions": ["clear_opt_out"], "to": "start" } ]
+    }
+  },
+
+  "edge_cases": {
+    "blurry_photo": {
+      "detect": "POST /classify returns no items, or every confidence < 0.5.",
+      "handling": "photo_unclear sends photo_blurry with 3 tips (light, distance, spread out). After 2 failed photos, photo_retry_limit offers typing the items instead. Never guesses a price from a bad photo.",
+      "states": ["classifying", "photo_unclear", "correct_items"]
+    },
+    "unknown_item": {
+      "detect": "Typed text matches no label_synonyms, or classify confidence between 0.5 and 0.75.",
+      "handling": "0.5-0.75: items_unsure asks 'I think...' with Fix buttons. Unmatched text: unknown_item lists the 7 things we handle. Nothing outside the 7 contract labels is ever priced or booked.",
+      "states": ["confirm_items", "correct_items"]
+    },
+    "user_says_no": {
+      "detect": "intent:no or a No/Not now/Cancel button at any decision point.",
+      "handling": "user_declined: one friendly message, no follow-up nudges, Menu button. If a pickup existed and was not yet confirmed it is PATCHed to cancelled.",
+      "states": ["user_declined", "pickup_cancelled"]
+    },
+    "user_goes_silent": {
+      "detect": "No reply in a state with awaits_user = true.",
+      "handling": "One silence_nudge after 30 min with Continue / Menu buttons. At 23 h session_expired, then context is cleared (profile kept). Nudges are disabled while waiting on a recycler, after a booking, after a 'no' and after STOP.",
+      "states": ["*"]
+    },
+    "hazardous_item": {
+      "detect": "Any classify item with hazardous == true or label battery/ewaste; battery chosen in the e-waste list; battery words in free text.",
+      "handling": "hazard_dropoff: explain briefly, show nearest authorised drop-off points. Mixed photos let the user book ONLY the non-hazardous items. create_pickup is guarded in the agent and rejected by the backend (422) as a second line of defence.",
+      "states": ["hazard_dropoff", "dropoff_points", "dropoff_then_rest"]
+    },
+    "recycler_declines_or_no_answer": {
+      "detect": "POST /voice/response digit 2, or Gather timeout.",
+      "handling": "Try the next nearest candidate, max 3 calls, telling the user once. Then no_recycler; the pickup stays 'requested' for the ops dashboard.",
+      "states": ["awaiting_recycler", "no_recycler"]
+    },
+    "duplicate_or_late_messages": {
+      "detect": "Same WhatsApp message id twice, or a button tapped from an old message.",
+      "handling": "Dedupe by message id. Button ids are only valid in the state that sent them; otherwise reply not_understood and resend the current state's message.",
+      "states": ["*"]
+    }
+  }
+}
+

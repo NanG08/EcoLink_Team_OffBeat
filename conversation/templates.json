@@ -1,0 +1,641 @@
+{
+  "id": "ecolink.templates.v1",
+  "version": "1.0.0",
+  "rules": {
+    "body_max_chars": 300,
+    "button_title_max_chars": 20,
+    "max_buttons": 3,
+    "list_row_title_max_chars": 24,
+    "list_row_description_max_chars": 72,
+    "estimate_label": {
+      "en": "🏷️ *ESTIMATE* · estimated Rs {low}-{high}",
+      "hi": "🏷️ *अनुमान* · लगभग {low}-{high} रुपये"
+    },
+    "estimate_rule": "Every body that shows a price MUST contain the estimate_label line verbatim (with values filled in). English keeps the literal 'estimated Rs X-Y' so the agent's price normaliser (agent/agent_core.py) leaves it untouched. Hindi deliberately avoids 'Rs'/'₹' before digits so the normaliser does not rewrite it into English.",
+    "style": "Plain words, short sentences, one emoji at most per line, *bold* only for the key fact. No markdown lists or links. Hindi uses everyday words (पिकअप, कबाड़ीवाला, फ़ोटो) instead of formal Sanskritised Hindi.",
+    "placeholders_never_allowed_in_recycler_messages_before_accept": ["address_text", "address_short", "user_id", "image_url"]
+  },
+
+  "samples": {
+    "item_list": { "en": "Paper, Plastic, Metal", "hi": "कागज़, प्लास्टिक, धातु" },
+    "tip": { "en": "Flatten boxes and keep paper dry, it sells for more.", "hi": "डिब्बे चपटे करें और कागज़ सूखा रखें, अच्छा दाम मिलेगा।" },
+    "low": "120", "high": "260", "weight_kg": "3.5",
+    "address_short": { "en": "Flat 4B, Lakeview Apts, Indiranagar", "hi": "फ़्लैट 4B, लेकव्यू अपार्टमेंट, इंदिरानगर" },
+    "address_text": "Flat 4B, Lakeview Apartments, 12th Main, Indiranagar, Bengaluru 560038",
+    "slot_text": { "en": "Thu 9 Oct, 9 am-12 pm", "hi": "गुरु 9 अक्टू, सुबह 9-12" },
+    "recycler_name": "Sharma Kabadi Works",
+    "distance_km": "1.3",
+    "pickup_id": "pk_3f9a1c2b7d10",
+    "hazard_items": { "en": "Battery, E-waste", "hi": "बैटरी, ई-कचरा" },
+    "safe_items": { "en": "Paper, Plastic", "hi": "कागज़, प्लास्टिक" },
+    "item_type": { "en": "Laptop", "hi": "लैपटॉप" },
+    "age_text": { "en": "2-5 years", "hi": "2-5 साल" },
+    "condition_text": { "en": "Working", "hi": "चालू" },
+    "dropoff_list": "1. City E-Waste Hub (authorised) - 3.1 km\n2. Eco Drop Point (authorised) - 5.4 km\n3. Green Loop Recyclers - 4.2 km",
+    "buyer_list": "1. City E-Waste Hub (authorised) - 3.1 km\n2. Eco Drop Point (authorised) - 5.4 km\n3. Green Loop Recyclers - 4.2 km",
+    "user_name": "Demo Household"
+  },
+
+  "templates": {
+
+    "welcome_language": {
+      "type": "buttons",
+      "body": {
+        "en": "Namaste! 🌱 I'm EcoLink. I help you sell or recycle household waste, and book a kabadiwala pickup.\n\nWhich language do you prefer?\nआप किस भाषा में बात करना चाहेंगे?",
+        "hi": "नमस्ते! 🌱 मैं EcoLink हूँ। मैं घर का कबाड़ बेचने, रीसायकल करने और कबाड़ीवाला पिकअप बुक करने में मदद करता हूँ।\n\nWhich language do you prefer?\nआप किस भाषा में बात करना चाहेंगे?"
+      },
+      "buttons": [
+        { "id": "lang_en", "title": { "en": "English", "hi": "English" } },
+        { "id": "lang_hi", "title": { "en": "हिंदी", "hi": "हिंदी" } }
+      ]
+    },
+
+    "path_choice": {
+      "type": "buttons",
+      "body": {
+        "en": "What would you like to clear out today?\n\n♻️ *Regular waste*: paper, cardboard, plastic, metal, glass\n🔌 *E-waste*: phones, laptops, TVs, appliances, batteries",
+        "hi": "आज आप क्या हटाना चाहते हैं?\n\n♻️ *आम कबाड़*: कागज़, गत्ता, प्लास्टिक, धातु, काँच\n🔌 *ई-कचरा*: फ़ोन, लैपटॉप, टीवी, उपकरण, बैटरी"
+      },
+      "buttons": [
+        { "id": "path_regular", "title": { "en": "Regular waste", "hi": "आम कबाड़" } },
+        { "id": "path_ewaste",  "title": { "en": "E-waste", "hi": "ई-कचरा" } }
+      ]
+    },
+
+    "photo_request": {
+      "type": "buttons",
+      "body": {
+        "en": "Great! 📸 Send me one clear photo of your waste.\n\nTip: spread items out in good light. Your photo stays private and is deleted after 7 days.",
+        "hi": "बढ़िया! 📸 अपने कबाड़ की एक साफ़ फ़ोटो भेजें।\n\nसुझाव: सामान फैलाकर अच्छी रोशनी में फ़ोटो लें। आपकी फ़ोटो निजी रहती है और 7 दिन में हट जाती है।"
+      },
+      "buttons": [
+        { "id": "type_items", "title": { "en": "Type items instead", "hi": "लिखकर बताऊँ" } }
+      ]
+    },
+
+    "photo_received": {
+      "type": "text",
+      "body": {
+        "en": "Got it! 🔍 Checking your photo, this takes a few seconds...",
+        "hi": "मिल गई! 🔍 फ़ोटो देख रहा हूँ, बस कुछ सेकंड..."
+      }
+    },
+
+    "photo_reminder": {
+      "type": "buttons",
+      "body": {
+        "en": "I need a photo to see what you have. Tap 📎 or 📷 below and send one picture of your waste.",
+        "hi": "आपके सामान को देखने के लिए मुझे फ़ोटो चाहिए। नीचे 📎 या 📷 दबाकर कबाड़ की एक फ़ोटो भेजें।"
+      },
+      "buttons": [
+        { "id": "type_items", "title": { "en": "Type items instead", "hi": "लिखकर बताऊँ" } }
+      ]
+    },
+
+    "photo_blurry": {
+      "type": "buttons",
+      "body": {
+        "en": "Hmm, I couldn't see the items clearly. 🙈 Could you try again?\n\n💡 Use daylight or a bright light\n💡 Step back so everything fits\n💡 Spread items so they don't overlap",
+        "hi": "हम्म, सामान साफ़ नहीं दिखा। 🙈 एक बार फिर कोशिश करें?\n\n💡 दिन की या तेज़ रोशनी में लें\n💡 थोड़ा पीछे हटें ताकि सब दिखे\n💡 सामान अलग-अलग फैलाएँ"
+      },
+      "buttons": [
+        { "id": "type_items", "title": { "en": "Type items instead", "hi": "लिखकर बताऊँ" } },
+        { "id": "menu", "title": { "en": "Main menu", "hi": "मुख्य मेनू" } }
+      ]
+    },
+
+    "photo_retry_limit": {
+      "type": "buttons",
+      "body": {
+        "en": "Photos can be tricky! No problem, just type what you have, like: \"newspapers, plastic bottles, old tins\".",
+        "hi": "फ़ोटो में दिक्कत हो रही है, कोई बात नहीं! बस लिख दें आपके पास क्या है, जैसे: \"अख़बार, प्लास्टिक बोतल, पुराने डिब्बे\"।"
+      },
+      "buttons": [
+        { "id": "menu", "title": { "en": "Main menu", "hi": "मुख्य मेनू" } }
+      ]
+    },
+
+    "items_found": {
+      "type": "buttons",
+      "body": {
+        "en": "I can see: *{item_list}* ✅\n\nIs that right?",
+        "hi": "मुझे दिख रहा है: *{item_list}* ✅\n\nक्या यह सही है?"
+      },
+      "buttons": [
+        { "id": "items_ok",  "title": { "en": "Yes, correct", "hi": "हाँ, सही है" } },
+        { "id": "items_fix", "title": { "en": "Fix items", "hi": "बदलना है" } },
+        { "id": "new_photo", "title": { "en": "New photo", "hi": "नई फ़ोटो" } }
+      ]
+    },
+
+    "items_unsure": {
+      "type": "buttons",
+      "body": {
+        "en": "I *think* I see: {item_list} 🤔\n\nI'm not fully sure. Did I get it right?",
+        "hi": "मुझे *लगता* है ये है: {item_list} 🤔\n\nपूरा यकीन नहीं है। क्या मैंने सही पहचाना?"
+      },
+      "buttons": [
+        { "id": "items_ok",  "title": { "en": "Yes, correct", "hi": "हाँ, सही है" } },
+        { "id": "items_fix", "title": { "en": "Fix items", "hi": "बदलना है" } },
+        { "id": "new_photo", "title": { "en": "New photo", "hi": "नई फ़ोटो" } }
+      ]
+    },
+
+    "correct_items_prompt": {
+      "type": "text",
+      "body": {
+        "en": "Please type what you have, separated by commas.\n\nExample: \"paper, cardboard boxes, plastic bottles\"\n\nI handle: paper, cardboard, plastic, metal, glass, e-waste, batteries.",
+        "hi": "कृपया लिखें आपके पास क्या है, कॉमा लगाकर।\n\nजैसे: \"अख़बार, गत्ते के डिब्बे, प्लास्टिक बोतल\"\n\nमैं ये लेता हूँ: कागज़, गत्ता, प्लास्टिक, धातु, काँच, ई-कचरा, बैटरी।"
+      }
+    },
+
+    "unknown_item": {
+      "type": "buttons",
+      "body": {
+        "en": "Sorry, I don't recognise that item yet. 🙏\n\nI can help with: paper, cardboard, plastic, metal, glass, e-waste and batteries. Please type one of these.",
+        "hi": "माफ़ करें, यह सामान मैं अभी नहीं पहचानता। 🙏\n\nमैं इनमें मदद कर सकता हूँ: कागज़, गत्ता, प्लास्टिक, धातु, काँच, ई-कचरा और बैटरी। इनमें से कोई लिखें।"
+      },
+      "buttons": [
+        { "id": "new_photo", "title": { "en": "Send a photo", "hi": "फ़ोटो भेजूँ" } },
+        { "id": "menu", "title": { "en": "Main menu", "hi": "मुख्य मेनू" } }
+      ]
+    },
+
+    "hazard_warning": {
+      "type": "buttons",
+      "body": {
+        "en": "⚠️ *{hazard_items}* can leak harmful chemicals, so a regular kabadiwala can't take them.\n\nPlease drop them at an *authorised e-waste centre*. It's safe and free. Shall I show the nearest ones?",
+        "hi": "⚠️ *{hazard_items}* से नुकसानदेह केमिकल निकल सकते हैं, इसलिए आम कबाड़ीवाला इन्हें नहीं ले सकता।\n\nकृपया इन्हें *अधिकृत ई-वेस्ट केंद्र* पर जमा करें, यह सुरक्षित और मुफ़्त है। नज़दीकी केंद्र दिखाऊँ?"
+      },
+      "buttons": [
+        { "id": "show_dropoff", "title": { "en": "Show drop-off points", "hi": "केंद्र दिखाएँ" } },
+        { "id": "menu", "title": { "en": "Main menu", "hi": "मुख्य मेनू" } }
+      ]
+    },
+
+    "hazard_warning_mixed": {
+      "type": "buttons",
+      "body": {
+        "en": "⚠️ *{hazard_items}* need an *authorised e-waste centre*, not a regular pickup. They can leak harmful chemicals.\n\nGood news: I can still book a pickup for *{safe_items}*.",
+        "hi": "⚠️ *{hazard_items}* को *अधिकृत ई-वेस्ट केंद्र* पर ही देना होगा, आम पिकअप में नहीं। इनसे नुकसानदेह केमिकल निकल सकते हैं।\n\nअच्छी बात: *{safe_items}* का पिकअप मैं बुक कर सकता हूँ।"
+      },
+      "buttons": [
+        { "id": "show_dropoff", "title": { "en": "Show drop-off points", "hi": "केंद्र दिखाएँ" } },
+        { "id": "book_rest", "title": { "en": "Book the rest", "hi": "बाकी का पिकअप" } },
+        { "id": "menu", "title": { "en": "Main menu", "hi": "मुख्य मेनू" } }
+      ]
+    },
+
+    "weight_ask": {
+      "type": "buttons",
+      "body": {
+        "en": "Roughly how much is there? ⚖️ A guess is fine, the kabadiwala weighs it at pickup.\n\nYou can also type a number in kg.",
+        "hi": "लगभग कितना सामान है? ⚖️ अंदाज़ा काफ़ी है, कबाड़ीवाला पिकअप पर तौल लेगा।\n\nआप किलो में नंबर भी लिख सकते हैं।"
+      },
+      "buttons": [
+        { "id": "w_small",  "title": { "en": "Small bag (~1-2 kg)", "hi": "छोटा थैला ~1-2 kg" } },
+        { "id": "w_medium", "title": { "en": "Big bag (~3-5 kg)", "hi": "बड़ा थैला ~3-5 kg" } },
+        { "id": "w_large",  "title": { "en": "A lot (5+ kg)", "hi": "बहुत सारा 5+ kg" } }
+      ]
+    },
+
+    "price_display": {
+      "type": "buttons",
+      "contains_price": true,
+      "body": {
+        "en": "♻️ Tip: {tip}\n\n🏷️ *ESTIMATE* · estimated Rs {low}-{high}\nfor {item_list} (~{weight_kg} kg)\n\nFinal price is set by the kabadiwala after weighing. Want a free doorstep pickup?",
+        "hi": "♻️ सुझाव: {tip}\n\n🏷️ *अनुमान* · लगभग {low}-{high} रुपये\n{item_list} (~{weight_kg} kg) के लिए\n\nअसली दाम कबाड़ीवाला तौलकर तय करेगा। क्या मुफ़्त घर से पिकअप चाहिए?"
+      },
+      "buttons": [
+        { "id": "want_pickup", "title": { "en": "Book pickup", "hi": "पिकअप बुक करें" } },
+        { "id": "not_now", "title": { "en": "Not now", "hi": "अभी नहीं" } }
+      ]
+    },
+
+    "address_confirm": {
+      "type": "buttons",
+      "body": {
+        "en": "Should the kabadiwala come to your saved address?\n\n📍 {address_short}\n\n🔒 It's shared only after a kabadiwala accepts.",
+        "hi": "क्या कबाड़ीवाला आपके सेव किए पते पर आए?\n\n📍 {address_short}\n\n🔒 पता सिर्फ़ तभी भेजा जाएगा जब कबाड़ीवाला पिकअप स्वीकार करेगा।"
+      },
+      "buttons": [
+        { "id": "addr_same", "title": { "en": "Yes, same address", "hi": "हाँ, यही पता" } },
+        { "id": "addr_new",  "title": { "en": "New address", "hi": "नया पता" } }
+      ]
+    },
+
+    "address_ask": {
+      "type": "location_request",
+      "body": {
+        "en": "📍 Where should we pick up from?\n\nTap *Send location* or type your full address (house no., street, area, city).\n\n🔒 Shared with the kabadiwala only after they accept.",
+        "hi": "📍 पिकअप कहाँ से करना है?\n\n*लोकेशन भेजें* दबाएँ या पूरा पता लिखें (मकान नं., गली, इलाका, शहर)।\n\n🔒 पता कबाड़ीवाले को सिर्फ़ स्वीकार करने के बाद भेजा जाएगा।"
+      },
+      "action": { "name": "send_location" }
+    },
+
+    "address_too_short": {
+      "type": "text",
+      "body": {
+        "en": "That looks a bit short. Please add house number, street and area so the kabadiwala can find you. 🏠",
+        "hi": "पता थोड़ा छोटा लग रहा है। मकान नंबर, गली और इलाका भी लिखें ताकि कबाड़ीवाला आप तक पहुँच सके। 🏠"
+      }
+    },
+
+    "address_details_ask": {
+      "type": "text",
+      "body": {
+        "en": "Thanks! 📍 Got your location. Please type your flat or house number and building name.",
+        "hi": "धन्यवाद! 📍 लोकेशन मिल गई। कृपया अपना फ़्लैट या मकान नंबर और बिल्डिंग का नाम लिखें।"
+      }
+    },
+
+    "slot_choose": {
+      "type": "list",
+      "body": {
+        "en": "🗓️ When should the kabadiwala come? Pick a time that suits you.",
+        "hi": "🗓️ कबाड़ीवाला कब आए? अपनी सुविधा का समय चुनें।"
+      },
+      "list_button": { "en": "Choose time", "hi": "समय चुनें" },
+      "section_title": { "en": "Pickup times", "hi": "पिकअप समय" },
+      "rows_generator": {
+        "id_pattern": "slot_{yyyymmdd}_{hh}",
+        "value_pattern": "{yyyy}-{mm}-{dd}T{hh}:00:00+05:30",
+        "days": 3,
+        "windows": [
+          { "start": "09:00", "title": { "en": "{day}, 9 am-12 pm", "hi": "{day}, सुबह 9-12" } },
+          { "start": "16:00", "title": { "en": "{day}, 4-7 pm", "hi": "{day}, शाम 4-7" } }
+        ],
+        "day_names": {
+          "en": { "today": "Today", "tomorrow": "Tomorrow", "other": "{Ddd} {d} {Mmm}" },
+          "hi": { "today": "आज", "tomorrow": "कल", "other": "{d} {mmm_hi}" }
+        },
+        "skip_if_starts_within_minutes": 90
+      }
+    },
+
+    "pickup_confirm": {
+      "type": "buttons",
+      "contains_price": true,
+      "body": {
+        "en": "Please confirm your pickup ✅\n\n♻️ {item_list} (~{weight_kg} kg)\n🗓️ {slot_text}\n📍 {address_short}\n🏷️ *ESTIMATE* · estimated Rs {low}-{high}\n\nShall I book it?",
+        "hi": "कृपया पिकअप पक्का करें ✅\n\n♻️ {item_list} (~{weight_kg} kg)\n🗓️ {slot_text}\n📍 {address_short}\n🏷️ *अनुमान* · लगभग {low}-{high} रुपये\n\nक्या बुक कर दूँ?"
+      },
+      "buttons": [
+        { "id": "confirm_yes", "title": { "en": "Yes, book it", "hi": "हाँ, बुक करें" } },
+        { "id": "change_slot", "title": { "en": "Change time", "hi": "समय बदलें" } },
+        { "id": "confirm_no",  "title": { "en": "Cancel", "hi": "रद्द करें" } }
+      ]
+    },
+
+    "confirm_reprompt": {
+      "type": "buttons",
+      "body": {
+        "en": "Just to be sure, I'll only book when you say yes. 🙂 Should I book this pickup?",
+        "hi": "पक्का करने के लिए, मैं आपकी \"हाँ\" के बिना बुक नहीं करूँगा। 🙂 क्या यह पिकअप बुक कर दूँ?"
+      },
+      "buttons": [
+        { "id": "confirm_yes", "title": { "en": "Yes, book it", "hi": "हाँ, बुक करें" } },
+        { "id": "confirm_no",  "title": { "en": "No", "hi": "नहीं" } }
+      ]
+    },
+
+    "pickup_booking": {
+      "type": "text",
+      "body": {
+        "en": "Booking now... 📞 I'm calling a kabadiwala near you.",
+        "hi": "बुक कर रहा हूँ... 📞 आपके पास के कबाड़ीवाले को फ़ोन कर रहा हूँ।"
+      }
+    },
+
+    "pickup_requested": {
+      "type": "buttons",
+      "body": {
+        "en": "📞 I've called *{recycler_name}* ({distance_km} km away). I'll message you the moment they accept, usually within a few minutes.\n\nRef: {pickup_id}",
+        "hi": "📞 मैंने *{recycler_name}* ({distance_km} km दूर) को फ़ोन किया है। जैसे ही वे स्वीकार करेंगे, मैं आपको बताऊँगा, आमतौर पर कुछ ही मिनट में।\n\nरेफ़: {pickup_id}"
+      },
+      "buttons": [
+        { "id": "cancel_pickup", "title": { "en": "Cancel pickup", "hi": "पिकअप रद्द करें" } }
+      ]
+    },
+
+    "recycler_trying_next": {
+      "type": "text",
+      "body": {
+        "en": "{recycler_name} isn't free right now, so I'm calling the next kabadiwala nearby. Hang tight! ⏳",
+        "hi": "{recycler_name} अभी उपलब्ध नहीं हैं, इसलिए मैं पास के दूसरे कबाड़ीवाले को फ़ोन कर रहा हूँ। थोड़ा इंतज़ार करें! ⏳"
+      }
+    },
+
+    "pickup_confirmed_user": {
+      "type": "buttons",
+      "contains_price": true,
+      "body": {
+        "en": "🎉 Pickup confirmed!\n\n*{recycler_name}* will come on {slot_text}.\n🏷️ *ESTIMATE* · estimated Rs {low}-{high}, paid after weighing.\n\nThanks for recycling! 🌍 Ref: {pickup_id}",
+        "hi": "🎉 पिकअप पक्का हो गया!\n\n*{recycler_name}* {slot_text} को आएँगे।\n🏷️ *अनुमान* · लगभग {low}-{high} रुपये, तौलने के बाद भुगतान।\n\nरीसायकल करने के लिए धन्यवाद! 🌍 रेफ़: {pickup_id}"
+      },
+      "buttons": [
+        { "id": "cancel_pickup", "title": { "en": "Cancel pickup", "hi": "पिकअप रद्द करें" } },
+        { "id": "menu", "title": { "en": "Main menu", "hi": "मुख्य मेनू" } }
+      ]
+    },
+
+    "recycler_pickup_details": {
+      "type": "text",
+      "audience": "recycler",
+      "send_only_when": "pickup.status == 'confirmed'",
+      "body": {
+        "en": "✅ Pickup {pickup_id} confirmed. Thank you!\n\n♻️ {item_list} (~{weight_kg} kg)\n🗓️ {slot_text}\n📍 {address_text}\n\nPlease weigh in front of the customer and pay fairly.",
+        "hi": "✅ पिकअप {pickup_id} पक्का। धन्यवाद!\n\n♻️ {item_list} (~{weight_kg} kg)\n🗓️ {slot_text}\n📍 {address_text}\n\nकृपया ग्राहक के सामने तौलें और सही दाम दें।"
+      }
+    },
+
+    "pickup_completed": {
+      "type": "text",
+      "body": {
+        "en": "✅ Pickup done! Thanks for keeping {weight_kg} kg out of landfill. 🌍 Send a photo anytime for your next pickup.",
+        "hi": "✅ पिकअप हो गया! {weight_kg} kg कचरा लैंडफ़िल से बचाने के लिए धन्यवाद। 🌍 अगले पिकअप के लिए कभी भी फ़ोटो भेजें।"
+      }
+    },
+
+    "recycler_unavailable": {
+      "type": "buttons",
+      "body": {
+        "en": "Sorry 😔 no kabadiwala nearby could take this slot. Your request is saved and our team will try again.\n\nYou can also pick another time.",
+        "hi": "माफ़ करें 😔 पास का कोई कबाड़ीवाला इस समय नहीं आ पाएगा। आपकी रिक्वेस्ट सेव है, हमारी टीम फिर कोशिश करेगी।\n\nआप दूसरा समय भी चुन सकते हैं।"
+      },
+      "buttons": [
+        { "id": "change_slot",   "title": { "en": "Pick another time", "hi": "दूसरा समय चुनें" } },
+        { "id": "wait",          "title": { "en": "I'll wait", "hi": "इंतज़ार करूँगा" } },
+        { "id": "cancel_pickup", "title": { "en": "Cancel pickup", "hi": "पिकअप रद्द करें" } }
+      ]
+    },
+
+    "pickup_cancelled": {
+      "type": "text",
+      "body": {
+        "en": "Your pickup is cancelled. ✔️ No worries! Message me anytime when you're ready.",
+        "hi": "आपका पिकअप रद्द कर दिया गया है। ✔️ कोई बात नहीं! जब चाहें मुझे मैसेज करें।"
+      }
+    },
+
+    "user_said_no": {
+      "type": "buttons",
+      "body": {
+        "en": "No problem at all! 👍 Nothing has been booked. Whenever you're ready, just send a photo or say hi.",
+        "hi": "कोई बात नहीं! 👍 कुछ भी बुक नहीं हुआ है। जब भी तैयार हों, बस फ़ोटो भेजें या \"नमस्ते\" लिखें।"
+      },
+      "buttons": [
+        { "id": "menu", "title": { "en": "Main menu", "hi": "मुख्य मेनू" } }
+      ]
+    },
+
+    "ewaste_item_ask": {
+      "type": "list",
+      "body": {
+        "en": "🔌 Let's check your e-waste. What item is it?",
+        "hi": "🔌 चलिए आपका ई-कचरा देखते हैं। कौन सा सामान है?"
+      },
+      "list_button": { "en": "Choose item", "hi": "सामान चुनें" },
+      "section_title": { "en": "E-waste items", "hi": "ई-कचरा सामान" },
+      "rows": [
+        { "id": "ew_mobile",          "value": "mobile",          "title": { "en": "Mobile phone", "hi": "मोबाइल फ़ोन" } },
+        { "id": "ew_laptop",          "value": "laptop",          "title": { "en": "Laptop", "hi": "लैपटॉप" } },
+        { "id": "ew_tablet",          "value": "tablet",          "title": { "en": "Tablet", "hi": "टैबलेट" } },
+        { "id": "ew_tv",              "value": "tv",              "title": { "en": "TV / Monitor", "hi": "टीवी / मॉनिटर" } },
+        { "id": "ew_refrigerator",    "value": "refrigerator",    "title": { "en": "Fridge", "hi": "फ़्रिज" } },
+        { "id": "ew_washing_machine", "value": "washing_machine", "title": { "en": "Washing machine", "hi": "वॉशिंग मशीन" } },
+        { "id": "ew_ac",              "value": "ac",              "title": { "en": "AC", "hi": "एसी" } },
+        { "id": "ew_printer",         "value": "printer",         "title": { "en": "Printer", "hi": "प्रिंटर" } },
+        { "id": "ew_battery",         "value": "battery",         "title": { "en": "Battery / Power bank", "hi": "बैटरी / पावर बैंक" }, "description": { "en": "Always safe drop-off", "hi": "हमेशा सुरक्षित केंद्र पर" } },
+        { "id": "ew_other",           "value": "other",           "title": { "en": "Something else", "hi": "कुछ और" } }
+      ]
+    },
+
+    "ewaste_other_ask": {
+      "type": "text",
+      "body": {
+        "en": "Sure! Please type the item name, e.g. \"mixer\", \"router\" or \"camera\".",
+        "hi": "ज़रूर! कृपया सामान का नाम लिखें, जैसे \"मिक्सर\", \"राउटर\" या \"कैमरा\"।"
+      }
+    },
+
+    "ewaste_age_ask": {
+      "type": "buttons",
+      "body": {
+        "en": "How old is your *{item_type}*? 📅 A rough idea is fine.",
+        "hi": "आपका *{item_type}* कितना पुराना है? 📅 अंदाज़ा काफ़ी है।"
+      },
+      "buttons": [
+        { "id": "age_lt2",  "title": { "en": "Under 2 years", "hi": "2 साल से कम" } },
+        { "id": "age_2to5", "title": { "en": "2-5 years", "hi": "2-5 साल" } },
+        { "id": "age_gt5",  "title": { "en": "Over 5 years", "hi": "5 साल से ज़्यादा" } }
+      ]
+    },
+
+    "ewaste_condition_ask": {
+      "type": "buttons",
+      "body": {
+        "en": "And what condition is it in? 🔧",
+        "hi": "और यह किस हालत में है? 🔧"
+      },
+      "buttons": [
+        { "id": "cond_working", "title": { "en": "Works fine", "hi": "ठीक चलता है" } },
+        { "id": "cond_damaged", "title": { "en": "Works, but damaged", "hi": "चलता है, खराबी है" } },
+        { "id": "cond_broken",  "title": { "en": "Doesn't work", "hi": "बिल्कुल नहीं चलता" } }
+      ]
+    },
+
+    "ewaste_quote_sell": {
+      "type": "buttons",
+      "contains_price": true,
+      "body": {
+        "en": "Good news! 💚 Your {item_type} ({age_text}, {condition_text}) can be resold.\n\n🏷️ *ESTIMATE* · estimated Rs {low}-{high}\n\nBuyers set the final price after checking it. Want to see authorised buyers near you?",
+        "hi": "अच्छी ख़बर! 💚 आपका {item_type} ({age_text}, {condition_text}) दोबारा बिक सकता है।\n\n🏷️ *अनुमान* · लगभग {low}-{high} रुपये\n\nअसली दाम ख़रीदार जाँचकर तय करेंगे। पास के अधिकृत ख़रीदार देखें?"
+      },
+      "buttons": [
+        { "id": "show_buyers",  "title": { "en": "Show buyers", "hi": "ख़रीदार दिखाएँ" } },
+        { "id": "show_dropoff", "title": { "en": "Drop-off instead", "hi": "केंद्र पर दूँगा" } },
+        { "id": "not_now",      "title": { "en": "Not now", "hi": "अभी नहीं" } }
+      ]
+    },
+
+    "ewaste_quote_dropoff": {
+      "type": "buttons",
+      "contains_price": true,
+      "body": {
+        "en": "Thanks! Your {item_type} has low resale value.\n\n🏷️ *ESTIMATE* · estimated Rs {low}-{high}\n\nThe safest choice is a free *authorised e-waste drop-off*, so nothing toxic reaches a landfill. ♻️ Shall I show the nearest ones?",
+        "hi": "धन्यवाद! आपके {item_type} की दोबारा बिक्री की क़ीमत कम है।\n\n🏷️ *अनुमान* · लगभग {low}-{high} रुपये\n\nसबसे सुरक्षित है इसे मुफ़्त *अधिकृत ई-वेस्ट केंद्र* पर देना। ♻️ नज़दीकी केंद्र दिखाऊँ?"
+      },
+      "buttons": [
+        { "id": "show_dropoff", "title": { "en": "Show drop-off points", "hi": "केंद्र दिखाएँ" } },
+        { "id": "not_now",      "title": { "en": "Not now", "hi": "अभी नहीं" } }
+      ]
+    },
+
+    "location_ask": {
+      "type": "location_request",
+      "body": {
+        "en": "📍 To find places near you, tap *Send location* or type your area and city (e.g. \"Indiranagar, Bengaluru\").",
+        "hi": "📍 आपके पास की जगहें ढूँढने के लिए *लोकेशन भेजें* दबाएँ या अपना इलाका और शहर लिखें (जैसे \"इंदिरानगर, बेंगलुरु\")।"
+      },
+      "action": { "name": "send_location" }
+    },
+
+    "sell_options": {
+      "type": "buttons",
+      "body": {
+        "en": "🛒 Authorised e-waste buyers near you:\n\n{buyer_list}\n\n💡 Before selling, back up and factory-reset your device. Your details are not shared with them.",
+        "hi": "🛒 आपके पास के अधिकृत ई-वेस्ट ख़रीदार:\n\n{buyer_list}\n\n💡 बेचने से पहले डेटा बैकअप लेकर फ़ोन/डिवाइस फ़ैक्ट्री रीसेट करें। आपकी जानकारी उन्हें नहीं दी जाती।"
+      },
+      "buttons": [
+        { "id": "menu", "title": { "en": "Main menu", "hi": "मुख्य मेनू" } }
+      ]
+    },
+
+    "dropoff_points": {
+      "type": "buttons",
+      "body": {
+        "en": "♻️ Nearest authorised drop-off points:\n\n{dropoff_list}\n\nDrop-off is free. Please tape battery ends before carrying them. Thank you for disposing safely! 🌍",
+        "hi": "♻️ नज़दीकी अधिकृत ई-वेस्ट केंद्र:\n\n{dropoff_list}\n\nजमा करना मुफ़्त है। बैटरी ले जाने से पहले उसके सिरों पर टेप लगा दें। सुरक्षित निपटान के लिए धन्यवाद! 🌍"
+      },
+      "buttons": [
+        { "id": "menu", "title": { "en": "Main menu", "hi": "मुख्य मेनू" } }
+      ]
+    },
+
+    "dropoff_points_then_rest": {
+      "type": "buttons",
+      "body": {
+        "en": "♻️ Nearest authorised drop-off points:\n\n{dropoff_list}\n\nDrop-off is free. Want me to book a pickup for *{safe_items}* now?",
+        "hi": "♻️ नज़दीकी अधिकृत ई-वेस्ट केंद्र:\n\n{dropoff_list}\n\nजमा करना मुफ़्त है। क्या अब *{safe_items}* का पिकअप बुक कर दूँ?"
+      },
+      "buttons": [
+        { "id": "book_rest", "title": { "en": "Book the rest", "hi": "बाकी का पिकअप" } },
+        { "id": "menu", "title": { "en": "Main menu", "hi": "मुख्य मेनू" } }
+      ]
+    },
+
+    "dropoff_none": {
+      "type": "buttons",
+      "body": {
+        "en": "Sorry, I couldn't find an authorised centre close to you yet. 😔 Please check your city's municipal e-waste collection day, and never put it in household trash.",
+        "hi": "माफ़ करें, आपके पास अभी कोई अधिकृत केंद्र नहीं मिला। 😔 कृपया नगर निगम के ई-कचरा संग्रह दिवस की जानकारी लें, और इसे घर के कूड़े में न डालें।"
+      },
+      "buttons": [
+        { "id": "menu", "title": { "en": "Main menu", "hi": "मुख्य मेनू" } }
+      ]
+    },
+
+    "silence_nudge": {
+      "type": "buttons",
+      "body": {
+        "en": "Still there? 🙂 We can pick up right where we left off.",
+        "hi": "क्या आप अभी भी हैं? 🙂 हम वहीं से आगे बढ़ सकते हैं जहाँ रुके थे।"
+      },
+      "buttons": [
+        { "id": "continue", "title": { "en": "Continue", "hi": "आगे बढ़ें" } },
+        { "id": "menu",     "title": { "en": "Start over", "hi": "फिर से शुरू" } }
+      ],
+      "note": "button:continue re-sends the current state's on_enter message; button:menu goes to choose_path."
+    },
+
+    "session_expired": {
+      "type": "text",
+      "body": {
+        "en": "I've closed this chat for now so nothing gets booked by mistake. 👋 Send a photo or say hi whenever you're ready!",
+        "hi": "गलती से कुछ बुक न हो, इसलिए मैंने यह चैट अभी बंद कर दी है। 👋 जब भी तैयार हों, फ़ोटो भेजें या \"नमस्ते\" लिखें!"
+      }
+    },
+
+    "help": {
+      "type": "buttons",
+      "body": {
+        "en": "I can:\n♻️ Price your scrap from a photo\n🚚 Book a free kabadiwala pickup\n🔌 Value e-waste and find safe drop-off\n\nType *menu* to start, *hindi* to switch language, *stop* to opt out.",
+        "hi": "मैं ये कर सकता हूँ:\n♻️ फ़ोटो से कबाड़ का अनुमानित दाम\n🚚 मुफ़्त कबाड़ीवाला पिकअप\n🔌 ई-कचरे का दाम और सुरक्षित केंद्र\n\nशुरू करने के लिए *मेनू*, भाषा बदलने के लिए *english*, बंद करने के लिए *रोको* लिखें।"
+      },
+      "buttons": [
+        { "id": "menu", "title": { "en": "Main menu", "hi": "मुख्य मेनू" } }
+      ]
+    },
+
+    "language_switched": {
+      "type": "text",
+      "body": {
+        "en": "Done! I'll reply in English from now on. 👍",
+        "hi": "ठीक है! अब मैं हिंदी में जवाब दूँगा। 👍"
+      }
+    },
+
+    "not_understood": {
+      "type": "text",
+      "body": {
+        "en": "Sorry, I didn't catch that. 🙏 Please tap one of the buttons above, or type *help*.",
+        "hi": "माफ़ करें, समझ नहीं आया। 🙏 कृपया ऊपर दिए किसी बटन को दबाएँ, या *मदद* लिखें।"
+      }
+    },
+
+    "error_generic": {
+      "type": "text",
+      "body": {
+        "en": "Sorry, something went wrong on our side. 🙏 Please try again in a minute. Nothing has been booked.",
+        "hi": "माफ़ करें, हमारी तरफ़ से कुछ गड़बड़ हुई। 🙏 कृपया एक मिनट बाद फिर कोशिश करें। कुछ भी बुक नहीं हुआ है।"
+      }
+    },
+
+    "opt_out": {
+      "type": "text",
+      "body": {
+        "en": "You won't get any more messages from EcoLink. 👋 Just write to us anytime to start again.",
+        "hi": "अब आपको EcoLink से कोई मैसेज नहीं आएगा। 👋 फिर से शुरू करने के लिए कभी भी मैसेज करें।"
+      }
+    }
+  },
+
+  "voice": {
+    "description": "Phone offer read to a recycler (POST /voice/offer). Spoken in the recycler's language (recyclers.lang). Never contains the household address, name, phone or photo.",
+    "max_seconds": 25,
+    "speaking_rate_words_per_second": { "en": 2.5, "hi": 2.3 },
+    "gather": { "num_digits": 1, "timeout_seconds": 6, "accept_digit": "1", "decline_digit": "2", "repeat_once_on_no_input": true },
+    "tts_voice": { "en": { "language": "en-IN", "polly_voice": "Polly.Kajal-Neural" }, "hi": { "language": "hi-IN", "polly_voice": "Polly.Kajal-Neural" } },
+    "samples": {
+      "items_spoken": { "en": "paper and plastic", "hi": "कागज़ और प्लास्टिक" },
+      "weight_spoken": { "en": "about 4", "hi": "लगभग 4" },
+      "distance_spoken": { "en": "1.3", "hi": "1.3" },
+      "slot_spoken": { "en": "tomorrow, 9 to 12 in the morning", "hi": "कल सुबह 9 से 12 बजे" }
+    },
+    "scripts": {
+      "offer": {
+        "en": "Namaste! This is EcoLink. A new pickup near you: {items_spoken}, {weight_spoken} kilos, {distance_spoken} kilometres away, {slot_spoken}. To accept, press 1. To decline, press 2.",
+        "hi": "नमस्ते! EcoLink से कॉल है। आपके पास नया पिकअप है: {items_spoken}, {weight_spoken} किलो, {distance_spoken} किलोमीटर दूर, {slot_spoken}। स्वीकार करने के लिए 1 दबाएँ। मना करने के लिए 2 दबाएँ।"
+      },
+      "repeat": {
+        "en": "Press 1 to accept, or 2 to decline.",
+        "hi": "स्वीकार के लिए 1, मना करने के लिए 2 दबाएँ।"
+      },
+      "accepted": {
+        "en": "Thank you! Pickup confirmed. The address is coming to you on WhatsApp now.",
+        "hi": "धन्यवाद! पिकअप पक्का हो गया। पता अभी आपको WhatsApp पर भेज रहे हैं।"
+      },
+      "declined": {
+        "en": "No problem. Thank you, goodbye.",
+        "hi": "कोई बात नहीं। धन्यवाद, नमस्ते।"
+      },
+      "invalid_key": {
+        "en": "Sorry, please press 1 to accept or 2 to decline.",
+        "hi": "माफ़ कीजिए, स्वीकार के लिए 1 या मना करने के लिए 2 दबाएँ।"
+      },
+      "no_input_goodbye": {
+        "en": "We did not get a response. We will offer this pickup to someone else. Goodbye.",
+        "hi": "हमें जवाब नहीं मिला। यह पिकअप किसी और को दिया जाएगा। नमस्ते।"
+      }
+    },
+    "call_sequence": [
+      "Play scripts.offer inside <Gather numDigits=1 timeout=6>",
+      "Digit 1 -> POST /voice/response {pickup_id, digit:'1'} -> play scripts.accepted -> hang up (status confirmed; address sent by WhatsApp)",
+      "Digit 2 -> POST /voice/response {pickup_id, digit:'2'} -> play scripts.declined -> hang up (status declined; agent tries next recycler)",
+      "Other digit -> play scripts.invalid_key -> Gather again (once)",
+      "No input -> play scripts.repeat inside Gather (once) -> still nothing -> scripts.no_input_goodbye (treated as decline)"
+    ]
+  }
+}
+

@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoLink · Intelligent Waste Dispatch</title>
+  
+  <!-- Modern Geometric Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Atmospheric Background Elements -->
+  <div class="ambient-canvas">
+    <div class="ambient-gradient-1"></div>
+    <div class="ambient-gradient-2"></div>
+    <div class="ambient-noise"></div>
+  </div>
+
+  <!-- Minimal Floating Navigation -->
+  <header class="nav-wrap">
+    <nav class="nav-bar">
+      <a href="#" class="nav-brand">
+        <div class="nav-logo-mark">E</div>
+        <span class="nav-brand-name">EcoLink</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#how-it-works" class="nav-link">How it Works</a></li>
+        <li><a href="#vision" class="nav-link">For Households</a></li>
+        <li><a href="#dispatch" class="nav-link">For Recyclers</a></li>
+        <li><a href="#architecture" class="nav-link">Technology</a></li>
+      </ul>
+
+      <div class="nav-cta-group">
+        <a href="../dashboard/index.html" class="nav-link ops-transition-link" style="font-weight:600; padding:6px 12px; border-radius:var(--radius-pill); background:rgba(15,61,46,0.05);">Ops Console</a>
+        <a href="#cta" class="btn btn-primary btn-pill">Get Started</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ====================================================================
+         HERO SECTION
+         ==================================================================== -->
+    <section class="hero-section">
+      <div class="container hero-text-block">
+        <div class="eyebrow">INTELLIGENT WASTE DISPATCH</div>
+        
+        <h1 class="headline-hero">
+          Your waste.<br>
+          <span class="fade">Handled intelligently.</span>
+        </h1>
+        
+        <p class="lead-text">
+          One WhatsApp message turns household waste into a verified pickup — from identification to automated recycler dispatch.
+        </p>
+
+        <div class="hero-meta" style="margin-top: 24px;">
+          <span>WhatsApp-first</span>
+          <span class="hero-meta-dot"></span>
+          <span>AI-powered</span>
+          <span class="hero-meta-dot"></span>
+          <span>Automated</span>
+        </div>
+
+        <div class="hero-cta-row">
+          <a href="#cta" class="btn btn-primary">Try EcoLink</a>
+          <a href="#how-it-works" class="btn btn-secondary">See how it works</a>
+        </div>
+      </div>
+
+      <!-- Hero Product Composition (Oversized, 3 Merged Interfaces) -->
+      <div class="hero-stage-container">
+        <div class="hero-composition-wrap">
+          
+          <!-- Layer B: AI Classification Floating Panel (Behind Left) -->
+          <div class="floating-panel panel-ai">
+            <div class="ai-header">
+              <div class="ai-tag">
+                <span class="sparkle">✦</span> AI ANALYSIS
+              </div>
+              <span class="ai-confidence-pill">94% Confidence</span>
+            </div>
+            <div class="ai-body">
+              <div class="ai-detection-row">
+                <span class="ai-detection-name"><span class="ai-check">✓</span> Paper</span>
+                <span style="color:var(--text-faint); font-size:0.75rem;">Detected</span>
+              </div>
+              <div class="ai-detection-row">
+                <span class="ai-detection-name"><span class="ai-check">✓</span> Plastic bottles</span>
+                <span style="color:var(--text-faint); font-size:0.75rem;">Detected</span>
+              </div>
+              <div class="ai-detection-row">
+                <span class="ai-detection-name"><span class="ai-check">✓</span> Cardboard</span>
+                <span style="color:var(--text-faint); font-size:0.75rem;">Detected</span>
+              </div>
+              <div class="ai-category-badge">
+                MATERIAL SAFETY RATING
+                <span>Non-hazardous Household</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Layer A: WhatsApp Conversation (Foreground Center) -->
+          <div class="floating-panel panel-whatsapp">
+            <div class="wa-header">
+              <div class="wa-user-info">
+                <div class="wa-avatar">EL</div>
+                <div class="wa-name-group">
+                  <h4>EcoLink Assistant</h4>
+                  <p>
+                    <svg class="wa-badge-verified" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    Official Service
+                  </p>
+                </div>
+              </div>
+              <span style="font-size:0.75rem; color:var(--text-faint);">Active</span>
+            </div>
+
+            <div class="wa-body">
+              <!-- User message with image -->
+              <div class="wa-bubble user">
+                <div class="wa-image-card">
+                  <div class="wa-image-placeholder">
+                    <span>📸 Household Scrap Image</span>
+                    <small style="opacity:0.7;">3 items detected</small>
+                  </div>
+                </div>
+                Can you take this scrap?
+                <div class="wa-time">10:14 AM</div>
+              </div>
+
+              <!-- EcoLink AI reply -->
+              <div class="wa-bubble agent">
+                I found:
+                <div class="wa-item-pill-group">
+                  <span class="wa-item-pill">Paper</span>
+                  <span class="wa-item-pill">Plastic</span>
+                  <span class="wa-item-pill">Cardboard</span>
+                </div>
+                <div class="wa-price-highlight">
+                  Estimated Value
+                  <strong>₹110 – ₹185</strong>
+                </div>
+                Would you like to schedule a pickup?
+                <div class="wa-time">10:14 AM</div>
+              </div>
+
+              <!-- User confirmation -->
+              <div class="wa-bubble user">
+                Yes, book tomorrow at 10 AM.
+                <div class="wa-time">10:15 AM</div>
+              </div>
+
+              <!-- EcoLink final dispatch status -->
+              <div class="wa-bubble agent">
+                Pickup request created. Matching nearby kabadiwala partner...
+                <div class="wa-time">10:15 AM</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Layer C: Recycler Dispatch Map Panel (Foreground Right) -->
+          <div class="floating-panel panel-dispatch">
+            <div class="dispatch-header">
+              <span class="dispatch-live-badge">
+                <span class="pulse-dot"></span> Live Dispatch Engine
+              </span>
+              <span style="font-size:0.75rem; color:var(--text-faint); font-family:var(--font-mono);">ap-south-1</span>
+            </div>
+            
+            <div class="dispatch-map-view">
+              <!-- Abstract Topographic Map Background -->
+              <svg class="map-svg-grid" viewBox="0 0 400 200">
+                <path d="M0,50 Q100,20 200,60 T400,40" fill="none" stroke="#D1DDD5" stroke-width="1.5"/>
+                <path d="M0,110 Q120,90 220,130 T400,100" fill="none" stroke="#D1DDD5" stroke-width="1.5"/>
+                <path d="M0,160 Q80,180 260,150 T400,170" fill="none" stroke="#D1DDD5" stroke-width="1.5"/>
+                <line x1="120" y1="70" x2="280" y2="130" stroke="#1D5A40" stroke-width="2" stroke-dasharray="4,4"/>
+              </svg>
+
+              <!-- Household Marker -->
+              <div class="map-marker household">
+                <div class="map-marker-pin"></div>
+                <span class="map-marker-label">Household</span>
+              </div>
+
+              <!-- Best Match Recycler Marker -->
+              <div class="map-marker recycler-1">
+                <div class="map-marker-pin"></div>
+                <span class="map-marker-label">Sharma Kabadi</span>
+              </div>
+
+              <!-- Distant Recycler Marker -->
+              <div class="map-marker recycler-other">
+                <div class="map-marker-pin"></div>
+                <span class="map-marker-label">Partner R2</span>
+              </div>
+            </div>
+
+            <div class="dispatch-info-footer">
+              <div class="dispatch-stat">
+                <h5>Distance</h5>
+                <p>2.8 km away</p>
+              </div>
+              <div class="dispatch-stat">
+                <h5>Proximity</h5>
+                <p>Best Match</p>
+              </div>
+              <span class="dispatch-status-badge">Offer Sent</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION: THE SIMPLE FLOW (Sequential Progression)
+         ==================================================================== -->
+    <section id="how-it-works" class="section-flow">
+      <div class="container">
+        <div class="flow-header">
+          <div class="eyebrow">FROM MESSAGE TO PICKUP</div>
+          <h2 class="headline-section">
+            One message.<br>
+            The rest happens automatically.
+          </h2>
+          <p class="lead-text" style="margin: 0 auto;">
+            A continuous coordination layer that bridges everyday households with neighborhood scrap recyclers.
+          </p>
+        </div>
+
+        <div class="flow-path-wrapper">
+          <div class="flow-line-back"></div>
+          <div class="flow-line-progress" id="flow-progress-bar"></div>
+
+          <div class="flow-steps-grid">
+            <div class="flow-step-node active">
+              <div class="flow-step-badge">01</div>
+              <h4 class="flow-step-title">Send</h4>
+              <p class="flow-step-desc">Send a photo of your waste on WhatsApp.</p>
+            </div>
+
+            <div class="flow-step-node">
+              <div class="flow-step-badge">02</div>
+              <h4 class="flow-step-title">Understand</h4>
+              <p class="flow-step-desc">EcoLink identifies materials and estimates fair value.</p>
+            </div>
+
+            <div class="flow-step-node">
+              <div class="flow-step-badge">03</div>
+              <h4 class="flow-step-title">Confirm</h4>
+              <p class="flow-step-desc">You approve the scheduled slot with an explicit confirmation.</p>
+            </div>
+
+            <div class="flow-step-node">
+              <div class="flow-step-badge">04</div>
+              <h4 class="flow-step-title">Dispatch</h4>
+              <p class="flow-step-desc">EcoLink contacts the nearest verified recycler via automated call.</p>
+            </div>
+
+            <div class="flow-step-node">
+              <div class="flow-step-badge">05</div>
+              <h4 class="flow-step-title">Complete</h4>
+              <p class="flow-step-desc">Pickup confirmed, door address unlocked, transaction fulfilled.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION: AI UNDERSTANDS THE WASTE (Split Deep Dive)
+         ==================================================================== -->
+    <section id="vision" class="section-vision">
+      <div class="container vision-split-grid">
+        <div class="vision-info-col">
+          <div class="eyebrow">VISION + REASONING</div>
+          <h2 class="headline-section">It sees more than a photo.</h2>
+          <p class="lead-text">
+            EcoLink combines multimodal AI with conversation context to understand what is actually being offered for recycling.
+          </p>
+
+          <div class="vision-features-list">
+            <div class="vision-feature-item">
+              <div class="vision-feat-icon">✦</div>
+              <div class="vision-feat-text">
+                <h4>Multimodal Material Extraction</h4>
+                <p>Identifies segregated scrap across 7 distinct categories including metals, plastics, and glass.</p>
+              </div>
+            </div>
+
+            <div class="vision-feature-item">
+              <div class="vision-feat-icon">⚡</div>
+              <div class="vision-feat-text">
+                <h4>Hazardous Segregation Guard</h4>
+                <p>Batteries and hazardous e-waste are instantly separated and redirected to authorized drop-off depots.</p>
+              </div>
+            </div>
+
+            <div class="vision-feature-item">
+              <div class="vision-feat-icon">⚖</div>
+              <div class="vision-feat-text">
+                <h4>Transparent Price Modeling</h4>
+                <p>Maps identified scrap items against current city market scrap indices to produce clear price bands.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vision Interface Card -->
+        <div class="vision-canvas-card">
+          <div class="vision-viewport">
+            <svg viewBox="0 0 400 300" style="width:100%; height:100%; opacity:0.15; position:absolute;">
+              <circle cx="120" cy="100" r="60" fill="none" stroke="#123B2A" stroke-width="2"/>
+              <rect x="220" y="80" width="100" height="90" rx="8" fill="none" stroke="#123B2A" stroke-width="2"/>
+              <polygon points="180,220 220,160 260,220" fill="none" stroke="#123B2A" stroke-width="2"/>
+            </svg>
+
+            <!-- Subtle Spatial Tags -->
+            <div class="vision-region-tag region-paper">
+              <span class="region-dot"></span> PAPER · 95%
+            </div>
+            <div class="vision-region-tag region-plastic">
+              <span class="region-dot"></span> PLASTIC · 92%
+            </div>
+            <div class="vision-region-tag region-metal">
+              <span class="region-dot"></span> CARDBOARD · 96%
+            </div>
+          </div>
+
+          <div class="vision-meta-grid">
+            <div class="vision-meta-card">
+              <h5>Classification</h5>
+              <p>94% Confident</p>
+            </div>
+            <div class="vision-meta-card">
+              <h5>Estimated Value</h5>
+              <p>₹110 – ₹185</p>
+            </div>
+            <div class="vision-meta-card">
+              <h5>Safety Rating</h5>
+              <p>Non-hazardous</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION: SMART DISPATCH (Spatial Matching)
+         ==================================================================== -->
+    <section id="dispatch" class="section-dispatch">
+      <div class="container">
+        <div class="dispatch-center-header">
+          <div class="eyebrow">SPATIAL ROUTING</div>
+          <h2 class="headline-section">
+            The right recycler.<br>
+            At the right time.
+          </h2>
+          <p class="lead-text">
+            Geospatial proximity matching ensures local kabadiwalas receive pickup offers matching their exact material capabilities.
+          </p>
+        </div>
+
+        <div class="dispatch-interactive-board">
+          <!-- Interactive Map Canvas -->
+          <div class="dispatch-big-map">
+            <svg width="100%" height="100%" viewBox="0 0 600 480" style="position:absolute; inset:0;">
+              <!-- Radial Proximity Rings -->
+              <circle cx="280" cy="240" r="80" fill="none" stroke="rgba(18,59,42,0.06)" stroke-width="1.5"/>
+              <circle cx="280" cy="240" r="160" fill="none" stroke="rgba(18,59,42,0.05)" stroke-width="1.5"/>
+              <circle cx="280" cy="240" r="240" fill="none" stroke="rgba(18,59,42,0.04)" stroke-width="1.5"/>
+
+              <!-- Path from Household to Matched Partner -->
+              <line x1="280" y1="240" x2="420" y2="150" stroke="#1D5A40" stroke-width="2.5" stroke-dasharray="6,6"/>
+            </svg>
+
+            <!-- Center Household Location -->
+            <div class="map-marker" style="top: 50%; left: 46%;">
+              <div class="map-marker-pin" style="border-color:#3B82F6;"></div>
+              <span class="map-marker-label">Household (Pickup Requested)</span>
+            </div>
+
+            <!-- Matched Partner Pin -->
+            <div class="map-marker" style="top: 31%; left: 70%;">
+              <div class="map-marker-pin" style="border-color:#1D5A40; background:#8FCB9B;"></div>
+              <span class="map-marker-label">Sharma Kabadi (2.8 km)</span>
+            </div>
+
+            <!-- Idle Partner Pins -->
+            <div class="map-marker" style="top: 68%; left: 24%; opacity: 0.4;">
+              <div class="map-marker-pin"></div>
+              <span class="map-marker-label">Partner R3</span>
+            </div>
+            <div class="map-marker" style="top: 75%; left: 65%; opacity: 0.4;">
+              <div class="map-marker-pin"></div>
+              <span class="map-marker-label">Partner R4</span>
+            </div>
+          </div>
+
+          <!-- Matching Details Panel -->
+          <div class="dispatch-sidebar-panel">
+            <div>
+              <span class="eyebrow" style="margin-bottom:12px;">OPTIMAL ALLOCATION</span>
+              <h3 style="font-size:1.4rem; font-weight:700; color:var(--primary-deep);">Nearest Qualified Partner</h3>
+              
+              <div class="matched-recycler-card">
+                <span class="matched-badge-top">✦ Best Match Selected</span>
+                <h4 class="matched-name">Sharma Kabadi Works</h4>
+                <p class="matched-distance">2.8 km from household · Central Cluster</p>
+
+                <div class="matched-capabilities-list">
+                  <span class="matched-cap-pill">Paper</span>
+                  <span class="matched-cap-pill">Cardboard</span>
+                  <span class="matched-cap-pill">Plastic</span>
+                  <span class="matched-cap-pill">Metal</span>
+                </div>
+
+                <div style="font-size:0.8rem; color:var(--text-muted);">
+                  Availability: <strong>Active today</strong>
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top:24px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:0.8rem; font-weight:600; color:var(--text-faint);">DISPATCH STATUS</span>
+                <span style="font-size:0.8rem; font-weight:700; color:var(--primary-forest);">IVR Call Triggered</span>
+              </div>
+              <p style="font-size:0.82rem; color:var(--text-muted); line-height:1.4;">
+                System initiates automated telephony offer without disclosing household identity.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION: PRIVACY FIRST (Monochromatic Dark Section)
+         ==================================================================== -->
+    <section id="privacy" class="section-privacy">
+      <div class="privacy-glow-bg"></div>
+      
+      <div class="container">
+        <div class="privacy-header">
+          <div class="eyebrow eyebrow-dark">SECURITY & PRIVACY</div>
+          <h2 class="headline-section">Privacy is built into the workflow.</h2>
+          <p class="lead-text">
+            Recycler candidates never receive the household address during matching or voice offers. Address details are released only after a recycler explicitly accepts the pickup.
+          </p>
+        </div>
+
+        <!-- Privacy Pipeline Sequence -->
+        <div class="privacy-pipeline">
+          <div class="privacy-gate-card">
+            <span class="privacy-step-num">STEP 01</span>
+            <h4 class="privacy-gate-title">Household Request</h4>
+            <p class="privacy-gate-desc">Household initiates pickup with photo and preferred time window.</p>
+            <span class="privacy-status-pill locked">🔒 Address Encrypted</span>
+          </div>
+
+          <div class="privacy-gate-card">
+            <span class="privacy-step-num">STEP 02</span>
+            <h4 class="privacy-gate-title">Proximity Match</h4>
+            <p class="privacy-gate-desc">Haversine spatial lookup computes distance using city coordinate seeds.</p>
+            <span class="privacy-status-pill locked">🔒 Distance Only</span>
+          </div>
+
+          <div class="privacy-gate-card">
+            <span class="privacy-step-num">STEP 03</span>
+            <h4 class="privacy-gate-title">Automated Voice Offer</h4>
+            <p class="privacy-gate-desc">Partner hears scrap items, weight and general radius via phone call.</p>
+            <span class="privacy-status-pill locked">🔒 Zero Address Leak</span>
+          </div>
+
+          <div class="privacy-gate-card">
+            <span class="privacy-step-num">STEP 04</span>
+            <h4 class="privacy-gate-title">Recycler Confirms</h4>
+            <p class="privacy-gate-desc">Upon pressing 1 (Accept), the verified door address is dispatched via message.</p>
+            <span class="privacy-status-pill unlocked">✓ Address Released</span>
+          </div>
+        </div>
+
+        <!-- 3 Understated Security Indicators -->
+        <div class="privacy-badges-row">
+          <div class="security-badge-item">
+            <div class="sec-icon-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="sec-info">
+              <h4>7-day media retention</h4>
+              <p>Uploaded waste photos automatically purge after 7 days.</p>
+            </div>
+          </div>
+
+          <div class="security-badge-item">
+            <div class="sec-icon-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div class="sec-info">
+              <h4>Least-privilege IAM</h4>
+              <p>Strict AWS security boundaries across all compute functions.</p>
+            </div>
+          </div>
+
+          <div class="security-badge-item">
+            <div class="sec-icon-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div class="sec-info">
+              <h4>Confirmation-gated dispatch</h4>
+              <p>Never schedules until household sends explicit confirmation.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION: AUTOMATED RECYCLER CALL (Cinematic IVR Call)
+         ==================================================================== -->
+    <section class="section-voice-call">
+      <div class="container voice-call-split">
+        <div>
+          <div class="eyebrow">TELEPHONY AUTOMATION</div>
+          <h2 class="headline-section">
+            While you wait,<br>
+            EcoLink makes the call.
+          </h2>
+          <p class="lead-text">
+            Recyclers receive an automated phone call in their preferred language (Hindi or English). They hear the scrap categories, estimated weight, and distance, then simply press 1 on their keypad to accept.
+          </p>
+
+          <div style="margin-top:32px; display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-weight:700; color:var(--primary-forest);">✓</span>
+              <span style="font-size:0.95rem; color:var(--text-primary);">Sub-25 second audio summary</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-weight:700; color:var(--primary-forest);">✓</span>
+              <span style="font-size:0.95rem; color:var(--text-primary);">Single DTMF keypress response</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-weight:700; color:var(--primary-forest);">✓</span>
+              <span style="font-size:0.95rem; color:var(--text-primary);">Seamless fallback to next nearby partner</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phone Interface Mockup -->
+        <div class="phone-mockup-wrapper">
+          <div class="phone-screen-card">
+            <div class="phone-top-speaker"></div>
+
+            <div class="call-header-status">
+              <span class="call-subtext" id="call-status-label">Inbound IVR Dispatch</span>
+              <h3 class="call-title">EcoLink Pickup</h3>
+              <p style="font-size:0.8rem; color:#A3B5AC; margin-top:4px;">Automated Coordination</p>
+            </div>
+
+            <div class="call-details-box">
+              <h5>Offered Items</h5>
+              <p>Paper • Plastic • Cardboard</p>
+              <span style="display:block; font-size:0.82rem; color:var(--accent-mint); margin-top:6px;">
+                Approx. 2.8 km away
+              </span>
+            </div>
+
+            <div class="call-keypad-action">
+              <div class="keypad-btn-row">
+                <button class="key-digit-btn" id="btn-key-accept">
+                  <span class="key-digit">1</span>
+                  <span class="key-label">ACCEPT</span>
+                </button>
+                <button class="key-digit-btn">
+                  <span class="key-digit">2</span>
+                  <span class="key-label">DECLINE</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="call-result-banner" id="call-result-banner">
+              Awaiting Recycler Keypad (1: Accept, 2: Decline)
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION: TECHNICAL ARCHITECTURE (Particle Pipeline)
+         ==================================================================== -->
+    <section id="architecture" class="section-architecture">
+      <div class="container">
+        <div class="arch-header">
+          <div class="eyebrow">SYSTEM ARCHITECTURE</div>
+          <h2 class="headline-section">Built for the messy reality of waste.</h2>
+          <p class="lead-text">
+            Serverless, event-driven infrastructure engineered to run with complete fault tolerance.
+          </p>
+        </div>
+
+        <div class="arch-flow-pipeline">
+          <div class="arch-node">
+            <div class="arch-icon-box">💬</div>
+            <span class="arch-node-name">WhatsApp</span>
+            <span class="arch-node-sub">User Ingress</span>
+          </div>
+
+          <div class="arch-connector"><div class="arch-particle"></div></div>
+
+          <div class="arch-node">
+            <div class="arch-icon-box">⚡</div>
+            <span class="arch-node-name">API Gateway</span>
+            <span class="arch-node-sub">REST / Auth</span>
+          </div>
+
+          <div class="arch-connector"><div class="arch-particle" style="animation-delay:0.5s;"></div></div>
+
+          <div class="arch-node">
+            <div class="arch-icon-box">🧠</div>
+            <span class="arch-node-name">Strands Agent</span>
+            <span class="arch-node-sub">Guardrails</span>
+          </div>
+
+          <div class="arch-connector"><div class="arch-particle" style="animation-delay:1s;"></div></div>
+
+          <div class="arch-node">
+            <div class="arch-icon-box">✦</div>
+            <span class="arch-node-name">Bedrock</span>
+            <span class="arch-node-sub">Nova Vision</span>
+          </div>
+
+          <div class="arch-connector"><div class="arch-particle" style="animation-delay:1.5s;"></div></div>
+
+          <div class="arch-node">
+            <div class="arch-icon-box">🗄</div>
+            <span class="arch-node-name">DynamoDB</span>
+            <span class="arch-node-sub">State Store</span>
+          </div>
+
+          <div class="arch-connector"><div class="arch-particle" style="animation-delay:2s;"></div></div>
+
+          <div class="arch-node">
+            <div class="arch-icon-box">🗺</div>
+            <span class="arch-node-name">Matching</span>
+            <span class="arch-node-sub">Spatial Logic</span>
+          </div>
+
+          <div class="arch-connector"><div class="arch-particle" style="animation-delay:2.5s;"></div></div>
+
+          <div class="arch-node">
+            <div class="arch-icon-box">📞</div>
+            <span class="arch-node-name">Voice Call</span>
+            <span class="arch-node-sub">IVR Dispatch</span>
+          </div>
+        </div>
+
+        <div class="arch-pills-row">
+          <span class="arch-tag-pill">Serverless</span>
+          <span class="arch-tag-pill">Multimodal AI</span>
+          <span class="arch-tag-pill">Event-driven</span>
+          <span class="arch-tag-pill">Privacy-first</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION: OPERATIONS DASHBOARD (Mockup)
+         ==================================================================== -->
+    <section class="section-dashboard-preview">
+      <div class="container">
+        <div class="dash-preview-header">
+          <div class="eyebrow">CENTRALIZED VISIBILITY</div>
+          <h2 class="headline-section">One place to see every pickup.</h2>
+          <p class="lead-text">
+            Fleet operators and administrative teams maintain real-time visibility across active dispatches and partner capacity.
+          </p>
+        </div>
+
+        <div class="dash-mockup-frame">
+          <div class="dash-window-topbar">
+            <div class="dash-window-dots">
+              <span class="dash-dot" style="background:#EF4444;"></span>
+              <span class="dash-dot" style="background:#F59E0B;"></span>
+              <span class="dash-dot" style="background:#10B981;"></span>
+            </div>
+            <span class="dash-window-title">EcoLink Operations Console · prod</span>
+            <span style="font-size:0.75rem; color:var(--text-faint);">Live Fleet Feed</span>
+          </div>
+
+          <div class="dash-body-inner">
+            <div class="dash-metrics-grid">
+              <div class="dash-metric-card">
+                <h6>Active Requests</h6>
+                <div class="num">14</div>
+              </div>
+              <div class="dash-metric-card">
+                <h6>Pending Calls</h6>
+                <div class="num">03</div>
+              </div>
+              <div class="dash-metric-card">
+                <h6>Confirmed Today</h6>
+                <div class="num">48</div>
+              </div>
+              <div class="dash-metric-card">
+                <h6>Completed Pickups</h6>
+                <div class="num">124</div>
+              </div>
+            </div>
+
+            <table class="dash-feed-table">
+              <thead>
+                <tr>
+                  <th>Pickup ID</th>
+                  <th>Materials</th>
+                  <th>Est. Value</th>
+                  <th>Assigned Partner</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>pk_3f9a1c2b</strong></td>
+                  <td>Paper (4.5kg), Cardboard (2kg)</td>
+                  <td>₹110 – ₹185</td>
+                  <td>Sharma Kabadi Works</td>
+                  <td><span class="dash-status-chip chip-confirmed">Confirmed</span></td>
+                </tr>
+                <tr>
+                  <td><strong>pk_8c1e4f9b</strong></td>
+                  <td>Metal (6kg), Glass (3kg)</td>
+                  <td>₹180 – ₹360</td>
+                  <td>Metro Metal Mart</td>
+                  <td><span class="dash-status-chip chip-offered">Offered (Calling)</span></td>
+                </tr>
+                <tr>
+                  <td><strong>pk_a72f05d9</strong></td>
+                  <td>Plastic (5kg)</td>
+                  <td>₹40 – ₹90</td>
+                  <td>Matching candidate...</td>
+                  <td><span class="dash-status-chip chip-requested">Requested</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION: SOCIAL / TRUST
+         ==================================================================== -->
+    <section class="section-trust">
+      <div class="container">
+        <div class="trust-principles-row">
+          <div class="trust-item"><span class="trust-dot"></span> WhatsApp-first</div>
+          <div class="trust-item"><span class="trust-dot"></span> AI-powered classification</div>
+          <div class="trust-item"><span class="trust-dot"></span> Automated dispatch</div>
+          <div class="trust-item"><span class="trust-dot"></span> Privacy-aware by design</div>
+          <div class="trust-item"><span class="trust-dot"></span> Serverless infrastructure</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         SECTION: FINAL CTA
+         ==================================================================== -->
+    <section id="cta" class="section-final-cta">
+      <div class="container">
+        <div class="cta-header-box">
+          <div class="eyebrow">GET STARTED TODAY</div>
+          <h2 class="headline-hero" style="font-size:clamp(3rem, 5.5vw, 5rem);">
+            Give waste a better destination.
+          </h2>
+          <p class="lead-text" style="margin: 0 auto 32px;">
+            From a WhatsApp message to a confirmed recycler pickup — EcoLink handles the journey.
+          </p>
+
+          <div class="hero-cta-row">
+            <a href="https://wa.me/" target="_blank" class="btn btn-primary btn-glow">Get Started on WhatsApp</a>
+            <a href="#architecture" class="btn btn-secondary">Explore the technology</a>
+          </div>
+        </div>
+
+        <div class="cta-bottom-art">
+          <div class="cta-floating-preview">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #E2E8F0; padding-bottom:16px;">
+              <span style="font-weight:700; color:var(--primary-deep);">EcoLink Intelligent Coordinator</span>
+              <span style="font-size:0.75rem; color:#10B981; font-weight:700;">● Online</span>
+            </div>
+            <p style="padding:20px 0; font-size:0.9rem; color:var(--text-muted);">
+              "Ready to clear out household scrap? Send your photo to begin."
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ====================================================================
+       FOOTER
+       ==================================================================== -->
+  <footer class="footer-wrap">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <h4>EcoLink</h4>
+          <p>Intelligent waste management, starting with a message.</p>
+        </div>
+
+        <ul class="footer-links-group">
+          <li><a href="#how-it-works" class="footer-link">How it Works</a></li>
+          <li><a href="#architecture" class="footer-link">Technology</a></li>
+          <li><a href="#privacy" class="footer-link">Privacy</a></li>
+          <li><a href="../dashboard/index.html" class="footer-link ops-transition-link">Ops Console</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-bottom-bar">
+        <span>© 2026 EcoLink Systems. All rights reserved.</span>
+        <span>Built for WeMakeDevs × AWS Hackathon.</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Subtle 500ms Dispatch Path Transition Screen -->
+  <div id="landing-ops-transition" class="landing-transition-layer">
+    <div class="landing-transition-box">
+      <div class="transition-route-indicator">
+        <span class="route-node">HOUSEHOLD</span>
+        <div class="route-line"><div class="route-pulse"></div></div>
+        <span class="route-node" style="color:var(--primary-forest);">ECOLINK</span>
+        <div class="route-line"><div class="route-pulse" style="animation-delay:0.2s;"></div></div>
+        <span class="route-node">RECYCLER</span>
+      </div>
+      <p style="margin-top:14px; font-size:0.8rem; font-family:var(--font-mono); color:var(--text-faint); letter-spacing:0.06em;">CONNECTING TO ECOLINK OPS...</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+

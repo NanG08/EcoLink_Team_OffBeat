@@ -5,7 +5,8 @@ Settings come from `-c key=value`, then the repo's .env file / environment, then
   prefix (ECOLINK_PREFIX), bedrock_model_id (BEDROCK_MODEL_ID), twilio_secret_name
   (TWILIO_SECRET_NAME), cors_origin (CORS_ORIGIN), notify_email (NOTIFY_EMAIL),
   public_base_url (custom domain only), retain_data (true keeps tables/bucket on destroy),
-  secrets_backend (SECRETS_BACKEND: secretsmanager | ssm).
+  secrets_backend (SECRETS_BACKEND: secretsmanager | ssm),
+  classify_primary (CLASSIFY_PRIMARY: bedrock | onnx, which classifier is tried first).
 """
 
 import os
@@ -40,6 +41,7 @@ EcoLinkStack(
     public_base_url=ctx("public_base_url"),
     retain_data=str(ctx("retain_data")).lower() == "true",
     secrets_backend=setting("secrets_backend", "SECRETS_BACKEND", "secretsmanager"),
+    classify_primary=setting("classify_primary", "CLASSIFY_PRIMARY", "bedrock"),
     env=cdk.Environment(
         account=os.environ.get("CDK_DEFAULT_ACCOUNT"),
         region=os.environ.get("AWS_REGION") or os.environ.get("CDK_DEFAULT_REGION") or "ap-south-1",

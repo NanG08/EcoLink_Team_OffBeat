@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "currency": "INR",
+  "updated": "2026-10-10",
+  "is_placeholder": true,
+  "source": "PLACEHOLDER VALUES - NOT COLLECTED FROM THE MARKET. Copied from the indicative demo numbers in scripts/demo_data.py so the demo has something to show. Replace every value marked \"placeholder\": true with rates collected locally (see ml/pricing/ASSUMPTIONS.md, section 'Replacing placeholders'), then set is_placeholder to false, update 'updated' and describe the real source here.",
+
+  "scrap": {
+    "_unit": "INR per kg paid by a local kabadiwala (low = typical floor, high = typical best rate)",
+    "paper":     { "low_per_kg": 10, "high_per_kg": 14, "placeholder": true, "notes": "Newspaper, books, notebooks. Newspaper usually fetches the upper end." },
+    "cardboard": { "low_per_kg": 6,  "high_per_kg": 9,  "placeholder": true, "notes": "Dry, flattened cartons. Wet or oily board is often refused." },
+    "plastic":   { "low_per_kg": 8,  "high_per_kg": 18, "placeholder": true, "notes": "Wide range: clean PET bottles sit at the top, mixed or soft plastic at the bottom." },
+    "metal":     { "low_per_kg": 30, "high_per_kg": 60, "placeholder": true, "notes": "Blended iron/steel range. Aluminium and copper are worth several times more; split them when real rates are collected." },
+    "glass":     { "low_per_kg": 1,  "high_per_kg": 3,  "placeholder": true, "notes": "Many kabadiwalas take glass for little or nothing; bottles may be bought per piece instead." }
+  },
+
+  "not_priced_per_kg": {
+    "ewaste": "Priced per item by POST /ewaste/quote (see the 'ewaste' section), not per kg.",
+    "battery": "Hazardous. Always routed to an authorised drop-off point; EcoLink never quotes a buying price for batteries."
+  },
+
+  "ewaste": {
+    "_unit": "INR. base_low/base_high = resale range of a like-new working unit; depreciated by age and condition.",
+    "items": {
+      "mobile":          { "base_low": 8000,  "base_high": 20000, "yearly_depreciation": 0.20, "placeholder": true },
+      "laptop":          { "base_low": 15000, "base_high": 35000, "yearly_depreciation": 0.15, "placeholder": true },
+      "tablet":          { "base_low": 6000,  "base_high": 18000, "yearly_depreciation": 0.18, "placeholder": true },
+      "tv":              { "base_low": 6000,  "base_high": 15000, "yearly_depreciation": 0.12, "placeholder": true },
+      "monitor":         { "base_low": 3000,  "base_high": 8000,  "yearly_depreciation": 0.12, "placeholder": true },
+      "refrigerator":    { "base_low": 8000,  "base_high": 20000, "yearly_depreciation": 0.08, "placeholder": true },
+      "washing_machine": { "base_low": 7000,  "base_high": 16000, "yearly_depreciation": 0.08, "placeholder": true },
+      "ac":              { "base_low": 9000,  "base_high": 22000, "yearly_depreciation": 0.08, "placeholder": true },
+      "printer":         { "base_low": 2000,  "base_high": 6000,  "yearly_depreciation": 0.15, "placeholder": true },
+      "other":           { "base_low": 500,   "base_high": 1500,  "yearly_depreciation": 0.20, "placeholder": true, "notes": "Fallback for any item type not listed above." }
+    },
+    "condition_factors": {
+      "working": 1.0,
+      "damaged": 0.35,
+      "broken":  0.08
+    },
+    "rules": {
+      "_note": "Mirrors constants in backend/ecolink/core/pricing.py (tests fail if they drift).",
+      "min_age_factor": 0.05,
+      "sell_threshold_inr": 500,
+      "batteries_always_dropoff": true
+    }
+  }
+}

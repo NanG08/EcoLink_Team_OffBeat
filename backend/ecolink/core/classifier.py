@@ -1,8 +1,16 @@
-"""POST /classify implementation: a vision model on Amazon Bedrock (Converse API).
+"""POST /classify implementation.
+
+Two classifiers, tried in order (response field `source` says which one answered):
+  1. a vision model on Amazon Bedrock (Converse API)        source "bedrock"
+  2. the local YOLOv8n ONNX model from S3 (core/vision_fallback.py)   source "onnx-yolov8n"
+If the first fails with a server-side error (Bedrock throttled, denied, not verified, down) the
+second answers. Set CLASSIFY_PRIMARY=onnx to try the local model first.
 
 Environment:
   CLASSIFY_MODEL_ID        Bedrock model / inference-profile id (must accept images,
                            e.g. apac.amazon.nova-pro-v1:0 when running in ap-south-1)
+  CLASSIFY_PRIMARY         "bedrock" (default) or "onnx"
+  MODELS_BUCKET            enables the local model (see core/model_store.py)
 
 The image URL is caller-supplied, so it is fetched only over https and only from PUBLIC
 addresses: every IP the host resolves to must be globally routable (blocks loopback,
@@ -15,6 +23,7 @@ from __future__ import annotations
 
 import ipaddress
 import json
+import logging
 import os
 import re
 import socket
@@ -23,8 +32,11 @@ import urllib.request
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
+from ecolink.core import vision_fallback
 from ecolink.core.constants import HAZARDOUS_LABELS, LABELS
 from ecolink.core.http import ApiError, bad_request
+from ecolink.core.log import log
+from ecolink.core.model_store import ModelUnavailable
 from ecolink.core.storage import MAX_IMAGE_BYTES
 
 _PROMPT = (
@@ -122,12 +134,7 @@ def parse_model_output(text: str) -> list[dict[str, Any]]:
     ]
 
 
-def classify(image_url: str, client: Any | None = None) -> dict[str, Any]:
-    model_id = os.environ.get("CLASSIFY_MODEL_ID")
-    if not model_id:
-        raise ApiError(503, "not_configured", "CLASSIFY_MODEL_ID is not set")
-    data = fetch_image(image_url)
-    fmt = image_format(data)
+def _bedrock_items(data: bytes, fmt: str, model_id: str, client: Any | None) -> list[dict[str, Any]]:
     if client is None:
         import boto3
 
@@ -148,4 +155,33 @@ def classify(image_url: str, client: Any | None = None) -> dict[str, Any]:
         raise
     except Exception as exc:  # noqa: BLE001 - botocore ClientError etc.
         raise ApiError(502, "classifier_error", f"Bedrock call failed: {exc}") from exc
-    return {"items": parse_model_output(text)}
+    return parse_model_output(text)
+
+
+def classify(image_url: str, client: Any | None = None) -> dict[str, Any]:
+    """Classify with Bedrock, falling back to the local ONNX model (and the reverse when
+    CLASSIFY_PRIMARY=onnx). The response carries `source` so callers can tell which one answered."""
+    model_id = os.environ.get("CLASSIFY_MODEL_ID")
+    available = {"bedrock": bool(model_id), "onnx": bool(os.environ.get("MODELS_BUCKET"))}
+    order = ["onnx", "bedrock"] if os.environ.get("CLASSIFY_PRIMARY", "bedrock").lower() == "onnx" else ["bedrock", "onnx"]
+    order = [name for name in order if available[name]]
+    if not order:
+        raise ApiError(503, "not_configured", "Neither CLASSIFY_MODEL_ID nor a local model (MODELS_BUCKET) is configured")
+
+    data = fetch_image(image_url)
+    fmt = image_format(data)
+    errors: list[ApiError] = []
+    for name in order:
+        try:
+            if name == "bedrock":
+                return {"items": _bedrock_items(data, fmt, model_id or "", client), "source": "bedrock"}
+            return {"items": vision_fallback.classify_bytes(data), "source": vision_fallback.SOURCE}
+        except ApiError as exc:
+            if exc.status < 500:  # the caller's image is the problem; another model will not help
+                raise
+            errors.append(exc)
+        except ModelUnavailable as exc:
+            errors.append(ApiError(503, "model_unavailable", str(exc)))
+        log("classify_source_failed", logging.WARNING, source=name, code=errors[-1].code,
+            detail=errors[-1].detail[:300], next=[n for n in order if n != name])
+    raise errors[0]

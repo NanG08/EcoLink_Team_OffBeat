@@ -1,0 +1,10 @@
+# Runtime for the local ONNX vision model (Lambda layer). Installed with --no-deps on purpose:
+# onnxruntime's declared extras (sympy, coloredlogs, ...) are not needed to run a model and
+# would add ~80 MB to a layer that must stay well under Lambda's 250 MB limit.
+# Verified: `import onnxruntime` + real inference on best.onnx work without them.
+onnxruntime==1.20.1
+numpy==1.26.4
+Pillow==10.4.0
+flatbuffers==25.12.19
+protobuf==7.36.2
+packaging==26.3

@@ -1,0 +1,17 @@
+# Runtime dependencies for the VisionFn Lambda (bundled by infra/ecolink_stack.py).
+#
+# Key differences from ml/vision/requirements.txt:
+#   - NO torch / torchvision (saves ~1 GB of compressed package size)
+#   - NO ultralytics (not needed when running ONNX Runtime directly)
+#   - NO matplotlib / seaborn / tqdm (training/eval tools, not needed at inference)
+#   - onnxruntime replaces torch as the execution backend for best.onnx
+#
+# Versions are minimum-bounded but not exact-pinned so that cross-platform pip
+# can select whichever wheel is available for the target Linux platform tag.
+# boto3/botocore are provided by the Lambda runtime — do not add them here.
+
+onnxruntime>=1.21.0
+numpy>=2.0.0
+Pillow>=10.0.0
+PyYAML>=6.0
+requests>=2.31.0

@@ -1,9 +1,9 @@
 # Inference configuration for EcoLink YOLOv8n waste detection pipeline.
 
 model:
-  weights_path: ml/vision/artifacts/weights/best.pt
-  image_size: 416   # must equal the --imgsz the weights were trained at (best.pt: 416)
-  device: auto   # "auto" → cuda if available, else cpu
+  weights_path: ml/vision/artifacts/weights/best.onnx
+  image_size: 416   # must equal the --imgsz the weights were trained at (best.onnx: 416)
+  device: cpu   # ONNX Runtime on Lambda is CPU-only; "auto" is ignored for .onnx
 
 confidence:
   # Minimum confidence to include a detection in the API response

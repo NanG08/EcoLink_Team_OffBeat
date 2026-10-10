@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoLink · Operations Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Leaflet Map CSS/JS (OpenStreetMap fallback / Location Service) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</head>
+<body>
+
+  <!-- LOGIN SCREEN (Cognito-ready) -->
+  <div id="login-screen" class="login-container">
+    <div class="login-card">
+      <div class="brand">
+        <span class="brand-icon">🌱</span>
+        <h1>EcoLink</h1>
+        <p class="subtitle">Operations & Fleet Dispatch Console</p>
+      </div>
+
+      <div class="badge-cognito">AWS Cognito Protected</div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label for="login-email">Operator Email</label>
+          <input type="email" id="login-email" value="admin@ecolink.internal" required placeholder="admin@ecolink.internal">
+          <span class="hint">Use <code>admin@...</code> for Admin group, or <code>ops@...</code> for Viewer</span>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" value="EcoLink2026!Aws" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Sign In with Cognito</button>
+      </form>
+
+      <div class="login-footer">
+        <span>Demo environment: Mock client active</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD -->
+  <div id="app" class="dashboard-layout hidden">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="brand-icon">🌱</span>
+        <div class="brand-info">
+          <h2>EcoLink Ops</h2>
+          <span id="user-badge" class="user-badge">Admin</span>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <button class="nav-item active" data-tab="pickups-view">
+          <span class="nav-icon">📦</span> Pickups & Orders
+        </button>
+        <button class="nav-item" data-tab="map-view">
+          <span class="nav-icon">🗺️</span> Live Dispatch Map
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="btn-demo-reset" class="btn btn-warning btn-sm btn-block">
+          ⚡ Demo Mode Reset
+        </button>
+        <button id="btn-logout" class="btn btn-outline btn-sm btn-block mt-2">
+          Sign Out
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <!-- HEADER -->
+      <header class="topbar">
+        <div class="topbar-title">
+          <h2 id="view-title">Pickups & Household Requests</h2>
+        </div>
+        <div class="topbar-actions">
+          <span class="indicator-live"><span class="dot"></span> Live updates</span>
+          <button id="btn-refresh" class="btn btn-secondary btn-sm">↻ Refresh</button>
+        </div>
+      </header>
+
+      <!-- TAB 1: PICKUPS LIST & DETAIL -->
+      <section id="pickups-view" class="tab-pane active">
+        <!-- STATS BAR -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <span class="stat-num" id="stat-total">0</span>
+            <span class="stat-label">Total Pickups</span>
+          </div>
+          <div class="stat-card stat-requested">
+            <span class="stat-num" id="stat-requested">0</span>
+            <span class="stat-label">Requested</span>
+          </div>
+          <div class="stat-card stat-offered">
+            <span class="stat-num" id="stat-offered">0</span>
+            <span class="stat-label">Offered (Calling)</span>
+          </div>
+          <div class="stat-card stat-confirmed">
+            <span class="stat-num" id="stat-confirmed">0</span>
+            <span class="stat-label">Confirmed</span>
+          </div>
+          <div class="stat-card stat-completed">
+            <span class="stat-num" id="stat-completed">0</span>
+            <span class="stat-label">Completed</span>
+          </div>
+        </div>
+
+        <!-- FILTERS -->
+        <div class="filters-bar">
+          <div class="filter-group">
+            <label>Status Filter:</label>
+            <div class="filter-chips" id="status-filters">
+              <button class="chip active" data-filter="all">All</button>
+              <button class="chip" data-filter="requested">Requested</button>
+              <button class="chip" data-filter="offered">Offered</button>
+              <button class="chip" data-filter="confirmed">Confirmed</button>
+              <button class="chip" data-filter="completed">Completed</button>
+              <button class="chip" data-filter="declined">Declined</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TWO COLUMN MASTER-DETAIL -->
+        <div class="master-detail-container">
+          <!-- LIST -->
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Pickup ID</th>
+                  <th>Items</th>
+                  <th>Est. Value</th>
+                  <th>Slot</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="pickups-table-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- DETAIL MODAL / DRAWER -->
+          <div id="detail-drawer" class="detail-drawer hidden">
+            <div class="drawer-header">
+              <h3>Pickup Details</h3>
+              <button id="close-drawer" class="close-btn">&times;</button>
+            </div>
+            <div class="drawer-body" id="detail-content">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: LIVE MAP VIEW -->
+      <section id="map-view" class="tab-pane hidden">
+        <div class="map-controls">
+          <div class="map-legend">
+            <span class="legend-item"><span class="marker-dot marker-pickup"></span> Pickups</span>
+            <span class="legend-item"><span class="marker-dot marker-recycler"></span> Recyclers (Kabadiwalas)</span>
+            <span class="legend-item"><span class="marker-dot marker-dropoff"></span> Authorised Drop-off</span>
+          </div>
+          <div class="map-provider-info">
+            Provider: <strong>OpenStreetMap / Amazon Location Service</strong>
+          </div>
+        </div>
+        <div id="map-canvas" class="map-canvas"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+

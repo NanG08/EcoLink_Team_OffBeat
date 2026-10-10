@@ -150,6 +150,29 @@ class VoiceApiTests(AwsTestCase):
         self.assertEqual((stored["status"], stored["recycler_id"]), ("offered", "R004"))
         self.assertEqual(self.server.calls()[-1]["To"], RECYCLER_PHONE)
 
+    def json_press(self, pid, digit, key=API_KEY):
+        ev = api_event("POST", "/voice/response", {"pickup_id": pid, "digit": digit})
+        if key:
+            ev["headers"] = {"Authorization": f"Bearer {key}"}
+        return invoke(voice.handler, ev)
+
+    def test_json_contract_callback_with_api_key_updates_status(self):
+        pid = self.new_pickup()
+        self.offer(pid)
+        status, body = self.json_press(pid, "1")
+        self.assertEqual((status, body), (200, {"pickup_id": pid, "status": "confirmed"}))
+        self.assertEqual(self.repo.get_pickup(pid)["status"], "confirmed")
+        self.assertEqual(len(self.server.messages()), 2)  # both sides notified, same as a keypad press
+
+    def test_json_contract_callback_needs_the_api_key(self):
+        pid = self.new_pickup()
+        self.offer(pid)
+        self.assertEqual(self.json_press(pid, "1", key="wrong")[0], 401)
+        status, body = self.json_press(pid, "1", key=None)
+        self.assertEqual((status, body["error"]), (403, "invalid_signature"))
+        self.assertEqual(self.json_press(pid, "7")[1]["error"], "invalid_digit")
+        self.assertEqual(self.repo.get_pickup(pid)["status"], "offered")
+
     def test_distance_is_read_out_when_the_user_has_a_location(self):
         pid = self.new_pickup()
         self.offer(pid)
@@ -246,12 +269,18 @@ class ClassifierTests(AwsTestCase):
         with self.assertRaises(ApiError):
             classifier.image_format(b"<html>")
 
-    def test_only_https_allow_listed_hosts_are_fetched(self):
-        for url in ("http://bucket.s3.amazonaws.com/a.jpg", "https://169.254.169.254/latest/meta-data",
-                    "https://evil.example.com/a.jpg", "file:///etc/passwd", "https://localhost/a.jpg"):
+    def test_private_loopback_and_metadata_addresses_are_never_fetched(self):
+        for url in ("http://example.com/a.jpg", "file:///etc/passwd", "ftp://example.com/a.jpg",
+                    "https://169.254.169.254/latest/meta-data", "https://127.0.0.1/a.jpg",
+                    "https://10.0.0.5/a.jpg", "https://192.168.1.1/a.jpg", "https://[::1]/a.jpg",
+                    "https://localhost/a.jpg", "https://[fe80::1]/a.jpg"):
             with self.subTest(url=url), self.assertRaises(ApiError) as ctx:
                 classifier.fetch_image(url)
             self.assertEqual(ctx.exception.status, 400)
+
+    def test_any_public_https_host_is_accepted(self):
+        classifier.assert_public_https("https://8.8.8.8/photo.jpg")  # IP literal: no DNS needed
+        classifier.assert_public_https("https://[2001:4860:4860::8888]/photo.jpg")
 
     def test_classify_sends_image_and_prompt_to_bedrock_converse(self):
         calls = []
@@ -265,7 +294,7 @@ class ClassifierTests(AwsTestCase):
         with mock.patch.dict(os.environ, {"CLASSIFY_MODEL_ID": "apac.amazon.nova-pro-v1:0"}), \
              mock.patch.object(classifier, "fetch_image", return_value=png):
             result = classifier.classify("https://b.s3.amazonaws.com/x.png", client=Bedrock())
-        self.assertEqual(result, {"items": [{"label": "metal", "confidence": 0.8, "hazardous": False}]})
+        self.assertEqual(result, {"items": [{"label": "metal", "confidence": 0.8, "hazardous": False}], "source": "bedrock"})
         content = calls[0]["messages"][0]["content"]
         self.assertEqual(calls[0]["modelId"], "apac.amazon.nova-pro-v1:0")
         self.assertEqual(content[0]["image"], {"format": "png", "source": {"bytes": png}})
@@ -308,7 +337,9 @@ class WebhookTests(AwsTestCase):
         status, body = self.inbound()
         self.assertEqual((status, body), (200, "<Response/>"))
         forwarded = json.loads(next(r for r in self.server.requests if r["path"] == "/agent/message")["body"])
-        self.assertEqual(forwarded, {"user_id": USER_ID, "text": "hello", "lang": "en"})
+        # The seeded user has a saved location, which the agent needs for find_recyclers.
+        self.assertEqual(forwarded, {"user_id": USER_ID, "lang": "en",
+                                     "text": "[USER_LOCATION: lat=12.9716 lng=77.5946]" + chr(10) + "hello"})
         (msg,) = self.server.messages()
         self.assertEqual((msg["To"], msg["From"], msg["Body"]),
                          (USER_ID, "whatsapp:+14155238886", "Namaste! Regular waste or e-waste?"))
@@ -318,7 +349,12 @@ class WebhookTests(AwsTestCase):
         user = self.repo.get_user("whatsapp:+911111111111")
         self.assertEqual(float(user["lat"]), 12.95)
         forwarded = json.loads(next(r for r in self.server.requests if r["path"] == "/agent/message")["body"])
-        self.assertEqual(forwarded["text"], "(location shared)")
+        self.assertEqual(forwarded["text"], "[USER_LOCATION: lat=12.95 lng=77.6]" + chr(10) + "(location shared)")
+
+    def test_no_location_tag_when_the_location_is_unknown(self):
+        self.inbound(From="whatsapp:+912222222222", Body="hi")
+        forwarded = json.loads(next(r for r in self.server.requests if r["path"] == "/agent/message")["body"])
+        self.assertEqual(forwarded["text"], "hi")
 
     def test_hindi_is_detected(self):
         self.inbound(Body="नमस्ते")
@@ -344,17 +380,38 @@ class WebhookTests(AwsTestCase):
         forwarded = json.loads(next(r for r in self.server.requests if r["path"] == "/agent/message")["body"])
         self.assertNotIn("image_url", forwarded)
 
-    def test_photo_is_stored_privately_and_a_presigned_url_goes_to_the_agent(self):
-        jpeg = b"\xff\xd8\xff\xe0" + b"j" * 32
-        with mock.patch.object(twilio.TwilioMessagingProvider, "fetch_media", return_value=(jpeg, "image/jpeg")):
-            self.inbound(NumMedia="1", MediaUrl0="https://api.twilio.com/m/1", MediaContentType0="image/jpeg", Body="")
+    MEDIA_PATH = "/Accounts/AC/Messages/MM1/Media/ME1"
+
+    def test_photo_is_copied_to_private_s3_and_deleted_from_twilio(self):
+        jpeg = b"\xff\xd8\xff\xe0" + b"j" * 64
+        default = self.server._default
+        self.server.responder = lambda path, body: (
+            (200, jpeg) if path == self.MEDIA_PATH else default(path, body))
+        self.inbound(NumMedia="1", MediaUrl0=self.server.url + self.MEDIA_PATH,
+                     MediaContentType0="image/jpeg", Body="")
+
         forwarded = json.loads(next(r for r in self.server.requests if r["path"] == "/agent/message")["body"])
         self.assertIn("ecolink-test-images", forwarded["image_url"])
         self.assertIn("Signature=", forwarded["image_url"])
-        keys = [o["Key"] for o in boto3.client("s3", region_name=REGION).list_objects_v2(
-            Bucket="ecolink-test-images")["Contents"]]
-        self.assertEqual(len(keys), 1)
-        self.assertTrue(keys[0].startswith("images/"))
+        s3 = boto3.client("s3", region_name=REGION)
+        (obj,) = s3.list_objects_v2(Bucket="ecolink-test-images")["Contents"]
+        self.assertTrue(obj["Key"].startswith("images/"))
+        self.assertEqual(s3.get_object(Bucket="ecolink-test-images", Key=obj["Key"])["Body"].read(), jpeg)
+
+        download = next(r for r in self.server.requests if r["method"] == "GET")
+        self.assertTrue(download["headers"]["Authorization"].startswith("Basic "))
+        deletion = next(r for r in self.server.requests if r["method"] == "DELETE")
+        self.assertEqual(deletion["path"], self.MEDIA_PATH + ".json")  # Twilio's copy is removed
+
+    def test_non_image_media_is_not_stored(self):
+        self.server.responder = lambda path, body: (
+            (200, b"%PDF-1.4", {"Content-Type": "application/pdf"}) if path == self.MEDIA_PATH
+            else self.server._default(path, body))
+        self.inbound(NumMedia="1", MediaUrl0=self.server.url + self.MEDIA_PATH,
+                     MediaContentType0="application/pdf", Body="")
+        self.assertNotIn("Contents", boto3.client("s3", region_name=REGION).list_objects_v2(Bucket="ecolink-test-images"))
+        forwarded = json.loads(next(r for r in self.server.requests if r["path"] == "/agent/message")["body"])
+        self.assertNotIn("image_url", forwarded)
 
 
 class AuthorizerTests(AwsTestCase):
@@ -455,6 +512,29 @@ class TwilioAdapterTests(AwsTestCase):
         msg = twilio.TwilioMessagingProvider().parse_inbound(WebhookRequest("POST", "u", {}, {}, body))
         self.assertEqual((msg.user_id, msg.text, msg.media_content_type), ("whatsapp:+911", "hello", "image/jpeg"))
         self.assertEqual((msg.latitude, msg.longitude, msg.message_id), (12.5, 77.5, "SM1"))
+
+    def test_fetch_media_follows_twilio_redirect_without_sending_credentials(self):
+        jpeg = b"\xff\xd8\xff" + b"x" * 10
+        target = self.server.url + "/storage/signed-object"
+        self.server.responder = lambda path, body: (
+            (302, {}, {"Location": target}) if path.endswith("/Media/ME1")
+            else (200, jpeg) if path == "/storage/signed-object" else (404, {}))
+        data, content_type = twilio.TwilioMessagingProvider().fetch_media(self.server.url + "/Accounts/AC/Messages/MM1/Media/ME1")
+        self.assertEqual((data, content_type), (jpeg, "image/jpeg"))
+        first, second = self.server.requests
+        self.assertIn("Authorization", first["headers"])
+        self.assertNotIn("Authorization", second["headers"])  # the signed storage URL gets no credentials
+
+    def test_delete_media_tolerates_already_deleted_and_reports_other_errors(self):
+        url = self.server.url + "/Accounts/AC/Messages/MM1/Media/ME1"
+        provider = twilio.TwilioMessagingProvider()
+        self.server.responder = lambda p, b: (404, {"message": "gone"})
+        provider.delete_media(url)  # 404 is fine
+        self.server.responder = lambda p, b: (500, {"message": "boom"})
+        with self.assertRaises(ProviderError):
+            provider.delete_media(url)
+        with self.assertRaises(ProviderError):
+            provider.delete_media("https://evil.example.com/Media/ME1")
 
     def test_fetch_media_refuses_non_twilio_hosts(self):
         with self.assertRaises(ProviderError):

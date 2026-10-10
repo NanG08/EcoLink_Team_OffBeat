@@ -1,0 +1,162 @@
+{
+  "images": 393,
+  "per_class": {
+    "paper": {
+      "accuracy": 0.9288,
+      "precision": 0.775,
+      "recall": 0.62,
+      "f1": 0.6889,
+      "support": 50,
+      "tp": 31,
+      "fp": 9,
+      "fn": 19,
+      "tn": 334,
+      "weak": true
+    },
+    "cardboard": {
+      "accuracy": 0.9695,
+      "precision": 0.9286,
+      "recall": 0.8125,
+      "f1": 0.8667,
+      "support": 48,
+      "tp": 39,
+      "fp": 3,
+      "fn": 9,
+      "tn": 342,
+      "weak": false
+    },
+    "plastic": {
+      "accuracy": 0.9237,
+      "precision": 0.8333,
+      "recall": 0.4348,
+      "f1": 0.5714,
+      "support": 46,
+      "tp": 20,
+      "fp": 4,
+      "fn": 26,
+      "tn": 343,
+      "weak": true
+    },
+    "metal": {
+      "accuracy": 0.888,
+      "precision": 0.6038,
+      "recall": 0.5818,
+      "f1": 0.5926,
+      "support": 55,
+      "tp": 32,
+      "fp": 21,
+      "fn": 23,
+      "tn": 317,
+      "weak": true
+    },
+    "glass": {
+      "accuracy": 0.9415,
+      "precision": 0.7857,
+      "recall": 0.9296,
+      "f1": 0.8516,
+      "support": 71,
+      "tp": 66,
+      "fp": 18,
+      "fn": 5,
+      "tn": 304,
+      "weak": false
+    },
+    "ewaste": {
+      "accuracy": 0.9364,
+      "precision": 0.9825,
+      "recall": 0.7,
+      "f1": 0.8175,
+      "support": 80,
+      "tp": 56,
+      "fp": 1,
+      "fn": 24,
+      "tn": 312,
+      "weak": false
+    },
+    "battery": {
+      "accuracy": 0.972,
+      "precision": 0.9688,
+      "recall": 0.8732,
+      "f1": 0.9185,
+      "support": 71,
+      "tp": 62,
+      "fp": 2,
+      "fn": 9,
+      "tn": 320,
+      "weak": false
+    }
+  },
+  "macro_avg": {
+    "accuracy": 0.9371,
+    "precision": 0.8397,
+    "recall": 0.7074,
+    "f1": 0.7582
+  },
+  "exact_match_accuracy": 0.687,
+  "images_with_no_prediction": 52,
+  "weak_classes": [
+    "paper",
+    "plastic",
+    "metal"
+  ],
+  "hazard_detection": {
+    "precision": 0.9835,
+    "recall": 0.7881,
+    "missed_images": 32,
+    "hazardous_images": 151
+  },
+  "top1_confusion_single_class": {
+    "paper": {
+      "plastic": 2,
+      "paper": 30,
+      "metal": 3,
+      "none": 13,
+      "battery": 1
+    },
+    "cardboard": {
+      "paper": 2,
+      "cardboard": 39,
+      "none": 3,
+      "battery": 1,
+      "metal": 1
+    },
+    "plastic": {
+      "metal": 7,
+      "glass": 7,
+      "plastic": 16,
+      "paper": 2,
+      "none": 3
+    },
+    "metal": {
+      "paper": 2,
+      "metal": 28,
+      "none": 4,
+      "glass": 4
+    },
+    "glass": {
+      "metal": 1,
+      "glass": 43,
+      "cardboard": 1,
+      "none": 2,
+      "plastic": 1
+    },
+    "ewaste": {
+      "none": 21,
+      "ewaste": 56,
+      "metal": 2,
+      "paper": 1
+    },
+    "battery": {
+      "battery": 62,
+      "paper": 1,
+      "glass": 1,
+      "none": 5,
+      "ewaste": 1,
+      "cardboard": 1
+    }
+  },
+  "split": "test",
+  "weights": "C:\\Users\\XeRush74\\Documents\\Learning & Research Work\\Work\\Hackathons\\Bharat Builds\\Work Repositories\\Echolink-fallback\\Raadhi_Team_OffBeat\\ml\\vision\\artifacts\\weights\\best.pt",
+  "image_size": 416,
+  "threshold": 0.5
+}

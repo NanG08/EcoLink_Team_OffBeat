@@ -1,0 +1,55 @@
+{
+  "weights": "C:\\Users\\XeRush74\\Documents\\Learning & Research Work\\Work\\Hackathons\\Bharat Builds\\Work Repositories\\Echolink-fallback\\Raadhi_Team_OffBeat\\ml\\vision\\artifacts\\weights\\best.pt",
+  "format": "onnx",
+  "exported": "C:\\Users\\XeRush74\\Documents\\Learning & Research Work\\Work\\Hackathons\\Bharat Builds\\Work Repositories\\Echolink-fallback\\Raadhi_Team_OffBeat\\ml\\vision\\artifacts\\weights\\best.onnx",
+  "exported_size_mb": 11.58,
+  "imgsz": 416,
+  "numerical_parity": {
+    "images_compared": 50,
+    "identical_label_sets": 50,
+    "max_confidence_diff": 2e-06,
+    "passed": true
+  },
+  "pipeline_parity": {
+    "images_compared": 50,
+    "identical_label_sets": 46,
+    "label_set_agreement": 0.92,
+    "max_confidence_diff": 0.3,
+    "mean_confidence_diff": 0.0222,
+    "mean_ms_pytorch": 263.0,
+    "mean_ms_exported": 92.7,
+    "mismatches": [
+      {
+        "image": "bat_train_battery_142.jpg",
+        "pytorch": {
+          "glass": 0.87
+        },
+        "exported": {
+          "battery": 0.62,
+          "glass": 0.57
+        }
+      },
+      {
+        "image": "bat_train_battery_238.jpg",
+        "pytorch": {},
+        "exported": {
+          "battery": 0.56
+        }
+      },
+      {
+        "image": "bat_train_battery_369.jpg",
+        "pytorch": {},
+        "exported": {
+          "glass": 0.55
+        }
+      },
+      {
+        "image": "bat_train_battery_645.jpg",
+        "pytorch": {},
+        "exported": {
+          "battery": 0.52
+        }
+      }
+    ]
+  }
+}

@@ -1,16 +1,20 @@
 """GET /price?label=&weight_kg=  and  POST /ewaste/quote {item_type, age_years, condition}.
 
-All amounts are ESTIMATES in INR, computed from the rate_table.
+All amounts are ESTIMATES in INR, computed from the rate_table in DynamoDB. If a rate is
+missing there (or DynamoDB fails) the rate table deployed to the models bucket is used instead
+(core/fallback_rates.py), so an estimate is still returned.
 """
 
 from __future__ import annotations
 
-from typing import Any
+import logging
+from typing import Any, Callable
 
 from ecolink import deps
-from ecolink.core import pricing
+from ecolink.core import fallback_rates, pricing
 from ecolink.core.constants import HAZARDOUS_LABELS, LABELS
 from ecolink.core.http import ApiError, api_handler, bad_request, json_body, not_found, query_params
+from ecolink.core.log import log
 from ecolink.core.validation import parse_number, require_str
 
 
@@ -22,6 +26,20 @@ def handler(event: dict, context: Any) -> dict[str, Any]:
     if route.endswith("/ewaste/quote") and event.get("httpMethod") == "POST":
         return _ewaste_quote(event)
     raise ApiError(404, "not_found", "Unknown route")
+
+
+def _lookup(primary: Callable[[str], Any], fallback: Callable[[str], Any], key: str) -> Any:
+    """DynamoDB rate first; the table from the models bucket when DynamoDB has no row or fails."""
+    try:
+        value = primary(key)
+    except Exception:  # noqa: BLE001 - DynamoDB outage / throttling must not stop an estimate
+        logging.getLogger("ecolink").exception("rate_lookup_failed key=%s", key)
+        value = None
+    if value is None or value == {}:
+        value = fallback(key)
+        if value is not None:
+            log("rate_from_fallback_table", key=key)
+    return value
 
 
 def _price(event: dict) -> dict[str, Any]:
@@ -36,7 +54,7 @@ def _price(event: dict) -> dict[str, Any]:
             "hazardous_label",
             f"'{label}' has no scrap rate; use POST /ewaste/quote or a safe drop-off point",
         )
-    rate = deps.get_repo().get_scrap_rate(label)
+    rate = _lookup(deps.get_repo().get_scrap_rate, fallback_rates.scrap_rate, label)
     if not rate:
         raise not_found(f"No rate configured for '{label}'")
     return pricing.scrap_price(rate, weight)
@@ -52,8 +70,9 @@ def _ewaste_quote(event: dict) -> dict[str, Any]:
         return {"low": 0, "high": 0, "recommendation": "dropoff"}
 
     repo = deps.get_repo()
-    rate = repo.get_ewaste_rate(item_type) or repo.get_ewaste_rate("other")
-    factor = repo.get_condition_factor(condition)
+    rate = (_lookup(repo.get_ewaste_rate, fallback_rates.ewaste_rate, item_type)
+            or _lookup(repo.get_ewaste_rate, fallback_rates.ewaste_rate, "other"))
+    factor = _lookup(repo.get_condition_factor, fallback_rates.condition_factor, condition)
     if not rate or factor is None:
         raise not_found("E-waste rates are not configured; run scripts/seed.py")
     low, high = pricing.ewaste_estimate(rate, factor, age)

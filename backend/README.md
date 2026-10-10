@@ -109,7 +109,7 @@ aws cognito-idp admin-set-user-password --user-pool-id <UserPoolId> --username y
 aws cognito-idp admin-add-user-to-group --user-pool-id <UserPoolId> --username you@example.com --group-name admins  # or viewers
 ```
 
-Then set `mockMode: false` and `baseUrl` in `dashboard/config.js` and sign in.
+Then set `mockMode: false` and `baseUrl` in `frontend/dashboard/config.js` and sign in.
 
 **Restore the demo state** at any time: `python scripts/reset.py --yes` (add `--purge-images <ImagesBucketName>` to empty the bucket).
 **Tear down**: `cd infra && cdk destroy` (deletes tables and bucket unless deployed with `-c retain_data=true`).
@@ -153,6 +153,33 @@ All JSON. Errors are always `{"error": "<code>", "detail": "<human readable mess
   with the address. SNS events carry ids, statuses and timestamps (the household id, never the address).
 - `confirmed` is reached by the recycler's keypad press (signed callback); a trusted API client can also PATCH
   `offered → confirmed`, which the state machine only allows after a real offer.
+
+## ML model fallbacks (weights in S3)
+
+The stack creates a private, versioned **models bucket** (`ModelsBucketName` output) and uploads these files into it on
+every `cdk deploy`:
+
+| S3 key | Local file | Used by |
+|---|---|---|
+| `vision/best.onnx` | `ml/vision/artifacts/weights/best.onnx` | `/classify` fallback (YOLOv8n detector, run with ONNX Runtime) |
+| `vision/best.pt` | `ml/vision/artifacts/weights/best.pt` | stored as the source checkpoint; not loaded at runtime |
+| `pricing/rate_table.json` | `ml/pricing/rate_table.json` | `/price` and `/ewaste/quote` fallback rates |
+
+- **`/classify`** tries Bedrock first and, if it fails with a server-side error (not verified, denied, throttled, down),
+  answers with the local model instead. `CLASSIFY_PRIMARY=onnx` in `.env` reverses the order. The response keeps the contract
+  (`{items:[{label,confidence,hazardous}]}`) and adds `source`: `bedrock` or `onnx-yolov8n`. The local model follows
+  `ml/vision/config/inference.yaml`: 416 px input, confidence >= 0.50, NMS IoU 0.45, one entry per label, `ewaste` and `battery`
+  always hazardous.
+- **`/price` and `/ewaste/quote`** read DynamoDB first; if a rate is missing (table not seeded) or DynamoDB fails, they use
+  `pricing/rate_table.json` from the models bucket. The arithmetic is the same; every number remains an estimate. There is no
+  trained price model: pricing is the rule table described in `ml/pricing/ASSUMPTIONS.md` (its values are placeholders).
+- **Why ONNX and not `best.pt`:** running `best.pt` needs PyTorch + ultralytics (hundreds of MB), which does not fit a Lambda zip.
+  `best.onnx` is the export of the same checkpoint (the export report records a maximum confidence difference of 2e-06 over 50
+  images), and runs with onnxruntime + numpy + Pillow in a ~120 MB layer built by the stack (`infra/ml-layer/`).
+- **Updating the model:** replace the files under `ml/`, run `cdk deploy`. A hash of the files is passed to the Lambdas
+  (`MODEL_VERSION`) so containers never keep a stale copy; older versions stay in the versioned bucket.
+- The local model runs inside `ProxyFn` (1536 MB). The first classification after a cold start downloads the 12 MB model.
+- Fidelity: the fallback resizes with an OpenCV-equivalent bilinear written in numpy (Pillow's resize low-pass filters and shifts the model's confidences). On ultralytics' sample photos at a 0.05 threshold it returned the same labels as ultralytics running the same `best.onnx` on 9 of 10 inputs, with a mean confidence difference of 0.003. Against ultralytics running `best.pt` it is looser (6 of 10 labels), but that gap is the ONNX export itself: ultralytics' own ONNX and PT outputs also agree on only 6 of 10 (the `.pt` model runs with rectangular padding, the fixed-size ONNX model with square). `scripts/check_vision_fallback.py` repeats the comparison on your own photos.
 
 ## Security & IAM
 

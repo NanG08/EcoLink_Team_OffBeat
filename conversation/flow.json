@@ -573,6 +573,46 @@
       "handling": "Dedupe by message id. Button ids are only valid in the state that sent them; otherwise reply not_understood and resend the current state's message.",
       "states": ["*"]
     }
+  },
+
+  "voice_channel": {
+    "description": "Conversational phone voice agent. User calls the EcoLink Twilio number; speech is transcribed by Twilio and routed through the same EcoLinkAgent core as WhatsApp.",
+    "webhook": "POST /voice/agent  (no API-key auth; Twilio X-Twilio-Signature verified server-side)",
+    "status_callback": "POST /voice/agent/end  (Twilio calls this when the call ends)",
+    "user_id_format": "voice:+<E164>  e.g. voice:+919800000001  (shares DynamoDB state with no other channel)",
+    "tts": {
+      "engine": "Amazon Polly (via Twilio <Say> voice attribute)",
+      "en": "Polly.Raveena  (en-IN)",
+      "hi": "Polly.Aditi    (hi-IN)"
+    },
+    "stt": {
+      "engine": "Twilio built-in speech recognition (<Gather input=speech>)",
+      "models": ["phone_call"],
+      "languages": ["en-IN", "hi-IN"],
+      "max_speech_seconds": 15,
+      "silence_timeout_seconds": 3
+    },
+    "turn_flow": [
+      { "turn": 0, "trigger": "new inbound call (no SpeechResult)", "action": "greeting_twiml → greet + <Gather speech>" },
+      { "turn": "N≥1", "trigger": "SpeechResult present", "action": "EcoLinkAgent.handle(speech) → reply_twiml → <Say reply> + <Gather speech>" },
+      { "turn": "any", "trigger": "user says goodbye / band karo / bye", "action": "goodbye_twiml → <Hangup>" },
+      { "turn": "any", "trigger": "user says 'operator' / 'human' / insaan", "action": "transfer_twiml → <Dial VOICE_TRANSFER_NUMBER>" },
+      { "turn": "any", "trigger": "agent error", "action": "error_twiml → apologise + <Hangup>" }
+    ],
+    "guardrails": [
+      "Same confirmation gate as WhatsApp: pickup only created after explicit 'yes'.",
+      "Same hazardous block: batteries / e-waste routed to drop-off, never regular pickup.",
+      "Images not supported on voice (image_url always None); agent responds gracefully.",
+      "Address not shared with recycler until recycler presses 1 (same privacy rule)."
+    ],
+    "twilio_setup": {
+      "step1": "Deploy the stack: cdk deploy",
+      "step2": "Copy TwilioVoiceAgentWebhookUrl from stack outputs",
+      "step3": "Twilio Console → Phone Numbers → your number → Voice Configuration",
+      "step4": "Set 'A call comes in' → Webhook → paste TwilioVoiceAgentWebhookUrl → HTTP POST",
+      "step5": "Set 'Call status changes' → paste TwilioVoiceAgentWebhookUrl/end → HTTP POST",
+      "optional": "Set VOICE_TRANSFER_NUMBER env var on VoiceAgentFn to enable operator transfer"
+    }
   }
 }
 

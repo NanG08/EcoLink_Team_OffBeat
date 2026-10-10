@@ -56,7 +56,7 @@ From the project root directory (`Radhi_Team_OffBeat`):
 
 ```bash
 # Start a local HTTP server on port 8000
-python3 -m http.server 8000
+python3 -m http.server 8000 --directory frontend
 ```
 
 Once running, navigate directly to:
@@ -73,10 +73,10 @@ If you prefer to serve the landing page and dashboard on separate ports:
 
 ```bash
 # Terminal 1 — Serve the Public Landing Page on port 8080:
-python3 -m http.server 8080 --directory site
+python3 -m http.server 8080 --directory frontend/site
 
 # Terminal 2 — Serve the Operations Console on port 8000:
-python3 -m http.server 8000 --directory dashboard
+python3 -m http.server 8000 --directory frontend/dashboard
 ```
 
 - Landing Page URL: [`http://localhost:8080`](http://localhost:8080)
@@ -129,7 +129,7 @@ When accessing `dashboard/index.html`, you are greeted by the Cognito-ready auth
 
 ### 3.3 Connecting the Console to the Deployed Backend
 
-The console ships in demo mode. To use the live backend, edit `dashboard/config.js`:
+The console ships in demo mode. To use the live backend, edit `frontend/dashboard/config.js`:
 
 ```js
 window.ECOLINK_CONFIG = { mockMode: false, baseUrl: 'https://<api-id>.execute-api.<region>.amazonaws.com/prod' };

@@ -1,4 +1,8 @@
 # Test dependencies (pip install -r requirements-dev.txt)
 pytest>=8
 boto3>=1.35
-moto[dynamodb,s3,sns,sqs,secretsmanager]>=5
+moto[dynamodb,s3,sns,sqs,secretsmanager,cognitoidp,ssm]>=5
+# local ML fallback tests (same pins as infra/ml-layer/requirements.txt)
+onnxruntime==1.20.1
+numpy==1.26.4
+Pillow==10.4.0

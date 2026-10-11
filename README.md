@@ -212,6 +212,7 @@ The table definitions live in `backend/ecolink/schema.py` and are shared by the 
 | **Recycler is called** | `/recyclers/match` → MatchFn → **`recyclers`**; `/voice/offer` → VoiceFn → status `offered` (SNS) → Twilio places the call (offer text has no address) |
 | **Recycler presses 1** | Twilio → `/voice/response` (signature checked) → VoiceFn → status `confirmed` (SNS) → address sent to the recycler, confirmation to the household (via Twilio) |
 | **Customer calls the EcoLink number (voice agent)** | Twilio speech-to-text → API Gateway `/voice/agent` (once per turn; `/voice/agent/end` when the call ends) → VoiceAgentFn (reads Twilio secret, upserts `users`, reads/writes `conversation-state` under `voice:+<number>`) → **agent Lambda** (same agent and guardrails as WhatsApp, calls **Bedrock**) → reply returned as TwiML, spoken by Twilio with Amazon Polly (Raveena for English, Aditi for Hindi); the agent's tools then follow the same flows above (classify, price, pickup, recycler call) |
+| **Customer says "call me" on WhatsApp (voice agent calls the customer)** | `/webhooks/messaging` → MessagingWebhookFn spots the request ("call me", "voice call", "फोन करो", ...) before the agent runs → asks Twilio to place an outbound call to the customer's WhatsApp number (Twilio secret supplies the voice number) → WhatsApp reply "I will call you now" → when the customer picks up, Twilio hits `/voice/agent` and the call continues exactly as in the row above; call end is logged via `/voice/agent/end` |
 | **Operator opens the dashboard** | `/auth/login` → AuthFn → **Cognito** → ID token → `/pickups`, `/dashboard/recyclers` → PickupsFn / DashboardFn (address hidden for `viewers` before confirmation) |
 
 ### Cost, region and clean-up
@@ -360,6 +361,7 @@ reply TwiML (<Say reply> + <Gather speech> for next turn)
 
 - **Same agent, same state** — voice conversations share the DynamoDB `conversation_state` table; user IDs are prefixed `voice:+<E164>` so they never collide with WhatsApp IDs.
 - **Bilingual TTS** — English uses Polly.Raveena (en-IN), Hindi uses Polly.Aditi (hi-IN). Language is auto-detected from the transcribed speech.
+- **"Call me" from WhatsApp** — if a customer texts "call me", "voice call" or "फोन करो", the messaging webhook has Twilio place an outbound call to their WhatsApp number, and the call is then handled by the same `/voice/agent` flow as an inbound call.
 - **Goodbye detection** — if the user says "bye", "goodbye", "band karo" etc., the call ends gracefully.
 - **Operator transfer** — if the user asks for a human, the call is transferred to `VOICE_TRANSFER_NUMBER` (set as a Lambda env var).
 - **All guardrails apply** — confirmation gate, hazardous item block, and address privacy rules are identical to WhatsApp.

@@ -211,6 +211,7 @@ The table definitions live in `backend/ecolink/schema.py` and are shared by the 
 | **User confirms a pickup** | `/pickups` → PickupsFn → **`pickups`** table → **SNS** `requested` |
 | **Recycler is called** | `/recyclers/match` → MatchFn → **`recyclers`**; `/voice/offer` → VoiceFn → status `offered` (SNS) → Twilio places the call (offer text has no address) |
 | **Recycler presses 1** | Twilio → `/voice/response` (signature checked) → VoiceFn → status `confirmed` (SNS) → address sent to the recycler, confirmation to the household (via Twilio) |
+| **Customer calls the EcoLink number (voice agent)** | Twilio speech-to-text → API Gateway `/voice/agent` (once per turn; `/voice/agent/end` when the call ends) → VoiceAgentFn (reads Twilio secret, upserts `users`, reads/writes `conversation-state` under `voice:+<number>`) → **agent Lambda** (same agent and guardrails as WhatsApp, calls **Bedrock**) → reply returned as TwiML, spoken by Twilio with Amazon Polly (Raveena for English, Aditi for Hindi); the agent's tools then follow the same flows above (classify, price, pickup, recycler call) |
 | **Operator opens the dashboard** | `/auth/login` → AuthFn → **Cognito** → ID token → `/pickups`, `/dashboard/recyclers` → PickupsFn / DashboardFn (address hidden for `viewers` before confirmation) |
 
 ### Cost, region and clean-up

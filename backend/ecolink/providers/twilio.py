@@ -64,10 +64,34 @@ def compute_signature(auth_token: str, url: str, form_pairs: list[tuple[str, str
     return base64.b64encode(digest).decode()
 
 
+def _signature_variants(request: WebhookRequest) -> dict[str, tuple[str, list[tuple[str, str]]]]:
+    """Alternative (url, params) readings of one request, used ONLY to diagnose a failed check."""
+    pairs = request.form_pairs()
+    parsed = urllib.parse.urlparse(request.url)
+    raw_pairs = [tuple(kv.split("=", 1)) if "=" in kv else (kv, "") for kv in request.body.split("&") if kv]
+    return {
+        "url_with_port_443": (parsed._replace(netloc=f"{parsed.netloc}:443").geturl(), pairs),
+        "plus_kept_as_plus": (request.url, [(urllib.parse.unquote(k), urllib.parse.unquote(v)) for k, v in raw_pairs]),
+        "blank_params_dropped": (request.url, [(k, v) for k, v in pairs if v != ""]),
+        "http_scheme": (request.url.replace("https://", "http://", 1), pairs),
+        "no_params": (request.url, []),
+    }
+
+
 def _verify(request: WebhookRequest) -> bool:
     provided = request.headers.get("x-twilio-signature", "")
-    expected = compute_signature(_credentials()["auth_token"], request.url, request.form_pairs())
-    return bool(provided) and hmac.compare_digest(provided, expected)
+    token = _credentials()["auth_token"]
+    expected = compute_signature(token, request.url, request.form_pairs())
+    if provided and hmac.compare_digest(provided, expected):
+        return True
+    if provided:  # diagnosis only: report which alternative reading WOULD have matched (never accepted)
+        from ecolink.core.log import log
+
+        matching = [name for name, (url, params) in _signature_variants(request).items()
+                    if hmac.compare_digest(provided, compute_signature(token, url, params))]
+        log("signature_variants_matching", matching=matching,
+            token_length=len(token), param_names=sorted(k for k, _ in request.form_pairs()))
+    return False
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -218,6 +242,24 @@ def build_offer_twiml(offer: dict[str, Any], action_url: str) -> str:
 
 class TwilioVoiceProvider(VoiceProvider):
     name = "twilio"
+
+    def place_agent_call(self, to_phone: str, agent_url: str, status_callback_url: str) -> str:
+        creds = _credentials()
+        body = _post_form(
+            "Calls.json",
+            {
+                "To": to_phone,
+                "From": creds["voice_from"],
+                "Url": agent_url,
+                "Method": "POST",
+                "StatusCallback": status_callback_url,
+                "StatusCallbackMethod": "POST",
+                "StatusCallbackEvent": "completed",
+                "Timeout": "30",
+            },
+            creds,
+        )
+        return str(body.get("sid", ""))
 
     def place_offer_call(self, to_phone: str, offer: dict[str, Any], callback_url: str) -> str:
         creds = _credentials()

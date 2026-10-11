@@ -106,6 +106,10 @@ class VoiceProvider(ABC):
     name: str = "base"
 
     @abstractmethod
+    def place_agent_call(self, to_phone: str, agent_url: str, status_callback_url: str) -> str:
+        """Call a user and connect them to the conversational voice agent."""
+
+    @abstractmethod
     def place_offer_call(self, to_phone: str, offer: dict[str, Any], callback_url: str) -> str:
         """Phone the recycler and read out `offer`. `offer` never has the address.
 
@@ -124,5 +128,12 @@ class VoiceProvider(ABC):
         return "application/json", json.dumps(result)
 
 
-def invalid_signature() -> ApiError:
+def invalid_signature(request: "WebhookRequest | None" = None) -> ApiError:
+    """403 for a webhook that failed verification. The URL used for the check is logged (it is
+    not secret) so a URL mismatch can be told apart from a wrong auth token."""
+    if request is not None:
+        from ecolink.core.log import log
+
+        log("signature_check_failed", url=request.url, signature_header_present=bool(
+            request.headers.get("x-twilio-signature")), body_params=len(request.form_pairs()))
     return ApiError(403, "invalid_signature", "Webhook signature verification failed")

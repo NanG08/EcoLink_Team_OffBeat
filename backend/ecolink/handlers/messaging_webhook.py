@@ -9,10 +9,11 @@ response, so a slow agent never breaks the provider's webhook timeout semantics.
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from ecolink import deps
-from ecolink.core.http import ApiError, api_handler, bad_request, raw_response
+from ecolink.core.http import ApiError, api_handler, bad_request, public_base_url, raw_response
 from ecolink.core.log import log
 from ecolink.core.storage import ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES
 from ecolink.handlers.proxy import agent_message
@@ -22,6 +23,11 @@ _FALLBACK_REPLY = {
     "en": "Sorry, I couldn't process your message right now. Please try again in a minute.",
     "hi": "माफ़ करें, अभी आपका संदेश संसाधित नहीं हो सका। कृपया थोड़ी देर बाद फिर कोशिश करें।",
 }
+
+_CALL_REQUEST = re.compile(
+    r"\b(call(?:\s+me)?|voice\s+call|phone\s+me)\b|फोन\s*(करो|लगाओ)",
+    re.IGNORECASE,
+)
 
 
 def detect_lang(text: str) -> str:
@@ -35,12 +41,20 @@ def handler(event: dict, context: Any) -> dict[str, Any]:
     messaging = deps.get_messaging()
     request = WebhookRequest.from_event(event)
     if not messaging.verify_request(request):
-        raise invalid_signature()
+        raise invalid_signature(request)
     msg = messaging.parse_inbound(request)
     if not msg.user_id:
         raise bad_request("Could not determine the sender")
 
     lang = detect_lang(msg.text)
+    if _CALL_REQUEST.search(msg.text or ""):
+        reply = _request_voice_call(event, msg, lang)
+        try:
+            messaging.send_text(messaging.address_for(msg.user_id), reply)
+        except ProviderError as exc:
+            log("reply_send_failed", logging.ERROR, user_id=msg.user_id, error=str(exc))
+        content_type, body = messaging.webhook_ack()
+        return raw_response(200, content_type, body)
     log("inbound_message", user_id=msg.user_id, has_media=bool(msg.media_url),
         has_location=msg.latitude is not None, message_id=msg.message_id)
 
@@ -49,7 +63,8 @@ def handler(event: dict, context: Any) -> dict[str, Any]:
     text = msg.text or ("(photo)" if image_url else "(location shared)")
     location = _known_location(msg)
     if location:  # the agent has no other source of coordinates for find_recyclers
-        text = f"[USER_LOCATION: lat={location[0]} lng={location[1]}]" + chr(10) + text
+        tag = "USER_LOCATION" if msg.latitude is not None else "KNOWN_USER_LOCATION"
+        text = f"[{tag}: lat={location[0]} lng={location[1]}]" + chr(10) + text
 
     try:
         payload = {"user_id": msg.user_id, "text": text, "lang": lang}
@@ -115,3 +130,25 @@ def _store_image(msg: InboundMessage) -> str | None:
     except Exception:  # noqa: BLE001 - a bad photo must not block the conversation
         logging.getLogger("ecolink").exception("media_store_failed user_id=%s", msg.user_id)
         return None
+
+
+def _request_voice_call(event: dict, msg: InboundMessage, lang: str) -> str:
+    phone = msg.user_id.split(":", 1)[-1]
+    if not re.fullmatch(r"\+\d{8,15}", phone):
+        return "I can only call a WhatsApp number in international format."
+    base = public_base_url(event)
+    try:
+        call_id = deps.get_voice().place_agent_call(
+            phone,
+            f"{base}/voice/agent",
+            f"{base}/voice/agent/end",
+        )
+        log("voice_agent_call_requested", user_id=msg.user_id, call_id=call_id)
+        return (
+            "मैं आपको अभी EcoLink voice assistant से कॉल कर रही हूँ।"
+            if lang == "hi" else
+            "I will call you now with the EcoLink voice assistant."
+        )
+    except ProviderError:
+        log("voice_agent_call_failed", logging.ERROR, user_id=msg.user_id)
+        return _FALLBACK_REPLY[lang]

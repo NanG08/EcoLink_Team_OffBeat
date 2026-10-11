@@ -1,11 +1,18 @@
 # EcoLink System & Operations
 
 EcoLink is a WhatsApp-first assistant for household waste management. A household sends a photo (or describes an e-waste item) on
-WhatsApp, gets an **estimated** price range, and, if they confirm, a nearby kabadiwala (scrap dealer) is **phoned** . Both sides then get a confirmation message. Batteries and other hazardous items are never sent to a normal pickup; they go to
+WhatsApp, gets an **estimated** price range, and, if they confirm, a nearby kabadiwala (scrap dealer) is **phoned** and presses 1 to accept
+or 2 to decline. Both sides then get a confirmation message. Batteries and other hazardous items are never sent to a normal pickup; they go to
 authorised drop-off points. A household's address is shared with a recycler only after the recycler accepts.
 
 It is built with the Strands Agents SDK and AWS serverless services (Lambda, API Gateway, DynamoDB, S3, SNS, Cognito, Secrets Manager,
 Bedrock), deployed with AWS CDK (Python). Twilio provides WhatsApp and voice.
+
+![EcoLink architecture on AWS, with a real WhatsApp screenshot of the deployed system](docs/images/Gemini_Generated_Image_p72eghp72eghp72e.png)
+*EcoLink on AWS: one agent, two channels (WhatsApp and voice), one address rule. The phone on the right is a real chat with the deployed stack.*
+
+![The EcoLink WhatsApp flow on a real phone: language choice, a photo of waste, a price estimate, address and slot confirmation, and a pickup request sent to a nearby kabadiwala](docs/images/whatsapp_flow_v2.jpg)
+*The WhatsApp flow, recorded against the deployed stack: language choice, photo of waste, estimated price, address and slot confirmation, and the pickup request to a nearby kabadiwala.*
 
 **Contents:** [How it works](#how-it-works) · [Repository layout](#repository-layout) · [Deploy the backend](#deploy-the-backend) ·
 [AWS infrastructure in detail](#aws-infrastructure-in-detail) · [Run the frontend](#run-the-frontend) · [Conversation design](#part-a-conversation-design) ·
@@ -14,14 +21,6 @@ Bedrock), deployed with AWS CDK (Python). Twilio provides WhatsApp and voice.
 ---
 
 ## How it works
-
-![EcoLink on AWS: one agent, two channels (WhatsApp and voice), one address rule](docs/images/Gemini_Generated_Image_p72eghp72eghp72e.png)
-
-*EcoLink on AWS: one agent, two channels (WhatsApp and voice), one address rule. The phone on the right is a real chat with the deployed stack.*
-
-![The EcoLink WhatsApp flow on a real phone: language choice, a photo of waste, a price estimate, address and slot confirmation, and a pickup request sent to a nearby kabadiwala](docs/images/whatsapp_flow_v2.jpg)
-
-*The WhatsApp flow, recorded against the deployed stack: language choice, photo of waste, estimated price, address and slot confirmation, and the pickup request to a nearby kabadiwala.*
 
 ```
 WhatsApp user ─► Twilio ─► API Gateway ─► MessagingWebhook Lambda ─► Agent Lambda (Strands + Bedrock) ─► reply via Twilio
@@ -41,20 +40,6 @@ Ops dashboard ─► /auth/login ─► Cognito ID token ─► /pickups, /dashb
 
 Rules enforced in code (not only in prompts): no booking without an explicit "yes"; every price is labelled an estimate; hazardous items
 never go to a normal pickup; the household address reaches a recycler only once the pickup is `confirmed`; photos are private and expire after 7 days.
-
-![EcoLink Operations Console, Live Dispatch map of Bengaluru showing active pickups, recyclers (kabadiwalas) and authorised drop-off points](docs/images/Screenshot%202026-10-11%20180011.png)
-
-*The Operations Console's Live Dispatch view: active pickups, recyclers (kabadiwalas) and authorised drop-off points across the Bengaluru cluster.*
-
-![EcoLink Operations Console pickups table with summary counts and each pickup's materials, estimated value, assigned partner and status](docs/images/ops_console.jpg)
-
-*The Operations Console's pickups table: active requests, pending calls and completed pickups, with each pickup's materials, estimated value, assigned partner and status (confirmed, offered while calling, requested).*
-
-### Try WhatsApp here
-
-![Twilio WhatsApp sandbox: send "join stiff-straight" to +1 415 523 8886](docs/images/Screenshot%202026-10-11%20224305.png)
-
-*Open WhatsApp, send the message `join stiff-straight` to **+1 415 523 8886**, then say hi to start a conversation with the deployed agent.*
 
 ---
 
@@ -81,9 +66,11 @@ EcoLink/
 │   └── pricing/rate_table.json  #                      -> uploaded to the models bucket by CDK
 ├── conversation/                # WhatsApp flow & content design (flow.json, templates.json)
 ├── frontend/
-│   ├── dashboard/               # Operations dashboard (vanilla JS; demo mode or live API via config.js)
+│   ├── dashboard/               # Operations dashboard (vanilla JS + MapLibre GL JS; demo mode or live API via config.js)
+│   │   ├── config.js            # git-ignored — copy from config.example.js and fill in your values
+│   │   └── config.example.js    # committed safe template
 │   └── site/                    # Landing page
-├── scripts/                     # put_secrets, seed, reset, smoke_test, check_twilio, check_vision_fallback
+├── scripts/                     # put_secrets, seed, reset, smoke_test, check_twilio, check_vision_fallback, serve_dashboard
 ├── docs/                        # API contract, architecture, conversation design, operations guide
 ├── tests/                       # Backend, ML, conversation and agent tests
 ├── .env.example                 # Every setting and credential the project reads (copy to .env)
@@ -211,8 +198,6 @@ The table definitions live in `backend/ecolink/schema.py` and are shared by the 
 | **User confirms a pickup** | `/pickups` → PickupsFn → **`pickups`** table → **SNS** `requested` |
 | **Recycler is called** | `/recyclers/match` → MatchFn → **`recyclers`**; `/voice/offer` → VoiceFn → status `offered` (SNS) → Twilio places the call (offer text has no address) |
 | **Recycler presses 1** | Twilio → `/voice/response` (signature checked) → VoiceFn → status `confirmed` (SNS) → address sent to the recycler, confirmation to the household (via Twilio) |
-| **Customer calls the EcoLink number (voice agent)** | Twilio speech-to-text → API Gateway `/voice/agent` (once per turn; `/voice/agent/end` when the call ends) → VoiceAgentFn (reads Twilio secret, upserts `users`, reads/writes `conversation-state` under `voice:+<number>`) → **agent Lambda** (same agent and guardrails as WhatsApp, calls **Bedrock**) → reply returned as TwiML, spoken by Twilio with Amazon Polly (Raveena for English, Aditi for Hindi); the agent's tools then follow the same flows above (classify, price, pickup, recycler call) |
-| **Customer says "call me" on WhatsApp (voice agent calls the customer)** | `/webhooks/messaging` → MessagingWebhookFn spots the request ("call me", "voice call", "फोन करो", ...) before the agent runs → asks Twilio to place an outbound call to the customer's WhatsApp number (Twilio secret supplies the voice number) → WhatsApp reply "I will call you now" → when the customer picks up, Twilio hits `/voice/agent` and the call continues exactly as in the row above; call end is logged via `/voice/agent/end` |
 | **Operator opens the dashboard** | `/auth/login` → AuthFn → **Cognito** → ID token → `/pickups`, `/dashboard/recyclers` → PickupsFn / DashboardFn (address hidden for `viewers` before confirmation) |
 
 ### Cost, region and clean-up
@@ -226,30 +211,30 @@ The table definitions live in `backend/ecolink/schema.py` and are shared by the 
 
 ## Run the frontend
 
-The EcoLink frontend (`frontend/`) is zero-build (vanilla HTML5, CSS3, ES modules, Leaflet): no bundler and no `npm install`.
+The EcoLink frontend (`frontend/`) is zero-build (vanilla HTML5, CSS3, ES modules, MapLibre GL JS): no bundler and no `npm install`.
 
-### 1. Recommended method (one server for both apps)
+### 1. Recommended method — dashboard dev server (injects Amazon Location key)
 
-Serve the `frontend` folder on port `8000`:
+The Live Dispatch map uses **Amazon Location Service** tiles. The API key lives in `.env` and is injected at serve time — never committed.
+
+```bash
+# Add your Amazon Location API key to .env:
+# AMAZON_LOCATION_API_KEY=v1.public.eyJ...
+
+python scripts/serve_dashboard.py
+```
+
+Then visit:
+- **Operations & dispatch console**: [`http://localhost:8000/dashboard/index.html`](http://localhost:8000/dashboard/index.html)
+- **Public landing page**: [`http://localhost:8000/site/index.html`](http://localhost:8000/site/index.html)
+
+> **Navigation**: the landing page's navbar and footer link to the **Ops Console**; the console header links back to **"← Back to EcoLink"**.
+
+### 2. Plain static server (map tiles won't load without the key injection)
 
 ```bash
 python -m http.server 8000 --directory frontend
 ```
-
-Then visit:
-- **Public landing page**: [`http://localhost:8000/site/index.html`](http://localhost:8000/site/index.html)
-- **Operations & dispatch console**: [`http://localhost:8000/dashboard/index.html`](http://localhost:8000/dashboard/index.html)
-
-> **Navigation**: the landing page's navbar and footer link to the **Ops Console**; the console header links back to **"← Back to EcoLink"**. These links are relative, so keep both folders under one server.
-
-### 2. Dedicated ports
-
-```bash
-python -m http.server 8080 --directory frontend/site        # landing page
-python -m http.server 8000 --directory frontend/dashboard   # console
-```
-
-(The cross-links between the two apps only work in the single-server mode above.)
 
 ### 3. Node alternatives
 
@@ -258,7 +243,16 @@ npx serve -l 8000 frontend
 npx live-server frontend --port=8000
 ```
 
-### 4. Demo mode and live mode
+### 4. config.js — never commit it
+
+`frontend/dashboard/config.js` is git-ignored. Each developer creates their own copy:
+
+```bash
+cp frontend/dashboard/config.example.js frontend/dashboard/config.js
+# fill in baseUrl, cognito IDs, and set mockMode: false for live backend
+```
+
+### 5. Demo mode and live mode
 
 The console starts in **demo mode** with built-in sample data, so it works with no backend:
 
@@ -267,8 +261,7 @@ The console starts in **demo mode** with built-in sample data, so it works with 
 | **Admin** | `admin@ecolink.internal` | *(any value)* | Sees phone numbers and complete addresses at all times, and can override a pickup's status |
 | **Viewer / Operator** | `ops@ecolink.internal` | *(any value)* | Address privacy enforced: addresses stay `[Hidden until confirmed]` until a recycler accepts |
 
-To use the **deployed backend**, edit `frontend/dashboard/config.js`: set `mockMode: false` and `baseUrl` to the `ApiUrl` output of `cdk deploy`, then
-sign in with a Cognito user (commands to create one are in [`backend/README.md`](backend/README.md)).
+To use the **deployed backend**, set `mockMode: false` and `baseUrl` to the `ApiUrl` output of `cdk deploy` in `config.js`, then sign in with a Cognito user (commands to create one are in [`backend/README.md`](backend/README.md)).
 
 ---
 
@@ -295,8 +288,9 @@ The dashboard (`frontend/dashboard/`) is a lightweight, responsive JavaScript ap
 1. **Cognito login** with permission groups: `admins` see raw address information; `viewers` have addresses hidden until a pickup is confirmed.
 2. **Pickup fleet management**: live list with status chips (`requested`, `offered`, `confirmed`, `completed`, `declined`), search and status filters, summary cards.
 3. **Master-detail drawer**: order details, item breakdown with an estimated value, and the status history.
-4. **Live dispatch map**: households requesting pickup, available kabadiwalas and authorised drop-off facilities, on OpenStreetMap.
-5. **Demo reset button**: restores the built-in sample data in demo mode. Against the live backend it is disabled; run `python scripts/reset.py --yes` instead.
+4. **Live dispatch map**: MapLibre GL JS + Amazon Location Service tiles. Households, kabadiwalas and authorised drop-off facilities as colour-coded markers. Geolocation "You are here" pulsing marker. API key loaded from `.env` via `scripts/serve_dashboard.py` — never committed.
+5. **WhatsApp Users tab**: live view of all household contacts joined with their conversation state and pickup count (`GET /dashboard/users`).
+6. **Demo reset button**: restores the built-in sample data in demo mode. Against the live backend it is disabled; run `python scripts/reset.py --yes` instead.
 
 ---
 
@@ -328,6 +322,7 @@ pip install -r ml/vision/requirements.txt
 - Not testable without real accounts: the Bedrock call itself, Twilio's media download, and live phone calls. `python scripts/smoke_test.py [--call]` checks those against a deployed stack.
 - `tests/test_serving_handler.py` expects an `ml/serving/lambda_handler.py` that is not in the repository yet.
 - `pytest.ini` disables a broken third-party `web3` plugin that some environments have installed.
+
 ---
 
 ## Part D: Conversational Voice Agent
@@ -361,7 +356,6 @@ reply TwiML (<Say reply> + <Gather speech> for next turn)
 
 - **Same agent, same state** — voice conversations share the DynamoDB `conversation_state` table; user IDs are prefixed `voice:+<E164>` so they never collide with WhatsApp IDs.
 - **Bilingual TTS** — English uses Polly.Raveena (en-IN), Hindi uses Polly.Aditi (hi-IN). Language is auto-detected from the transcribed speech.
-- **"Call me" from WhatsApp** — if a customer texts "call me", "voice call" or "फोन करो", the messaging webhook has Twilio place an outbound call to their WhatsApp number, and the call is then handled by the same `/voice/agent` flow as an inbound call.
 - **Goodbye detection** — if the user says "bye", "goodbye", "band karo" etc., the call ends gracefully.
 - **Operator transfer** — if the user asks for a human, the call is transferred to `VOICE_TRANSFER_NUMBER` (set as a Lambda env var).
 - **All guardrails apply** — confirmation gate, hazardous item block, and address privacy rules are identical to WhatsApp.
@@ -380,3 +374,8 @@ reply TwiML (<Say reply> + <Gather speech> for next turn)
 |---|---|
 | `backend/ecolink/handlers/voice_agent.py` | Lambda handler for inbound voice calls |
 | `backend/ecolink/providers/voice_agent_twiml.py` | TwiML builders (greeting, reply, goodbye, error, transfer) |
+
+
+### Video Link
+[![EcoLink Voice Agent Demo](https://youtu.be/aiS9fyoLE28)](https://youtu.be/aiS9fyoLE28)
+

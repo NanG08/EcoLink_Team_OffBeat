@@ -46,41 +46,40 @@ The EcoLink frontend consists of two cohesive, zero-build web applications:
 1. **Public Marketing & Product Landing Page** (`site/`): Editorial SaaS showcase with scroll animations, IVR call simulation, and architecture journey.
 2. **Operations & Dispatch Console** (`dashboard/`): Cognito-ready control room featuring real-time status counters, live search, interactive Leaflet dispatch map, and master-detail drawer.
 
-Because both applications use modern vanilla web standards (HTML5, CSS3, ES modules, Leaflet), **no build step, bundler, or `npm install` is required**.
+Because both applications use modern vanilla web standards (HTML5, CSS3, ES modules, MapLibre GL JS), **no build step, bundler, or `npm install` is required**.
 
 ---
 
-### Option A: Recommended — Single Unified Server (Serves Both Apps)
+### Option A: Recommended — Dashboard dev server (injects Amazon Location key)
 
-From the project root directory (`Radhi_Team_OffBeat`):
+The dashboard uses **Amazon Location Service** tiles (MapLibre GL JS). The API key is read from `.env`
+and injected at serve time — it is never committed to git.
 
 ```bash
-# Start a local HTTP server on port 8000
+# 1. Add your Amazon Location API key to .env:
+#    AMAZON_LOCATION_API_KEY=v1.public.eyJ...
+
+# 2. Start the dev server from the project root:
+python scripts/serve_dashboard.py
+```
+
+Once running, navigate to:
+- **Operations & Dispatch Console**: [`http://localhost:8000/dashboard/index.html`](http://localhost:8000/dashboard/index.html)
+- **Public SaaS Landing Page**: [`http://localhost:8000/site/index.html`](http://localhost:8000/site/index.html)
+
+> **Seamless Navigation**: The landing page links to the Ops Console; the console header links back to "← Back to EcoLink". These relative links work when both are served from the same server.
+
+---
+
+### Option B: Plain static server (no Amazon Location map tiles)
+
+If you don't need the live map, any static server works:
+
+```bash
 python3 -m http.server 8000 --directory frontend
 ```
 
-Once running, navigate directly to:
-- **Public SaaS Landing Page**: [`http://localhost:8000/site/index.html`](http://localhost:8000/site/index.html)
-- **Operations & Dispatch Console**: [`http://localhost:8000/dashboard/index.html`](http://localhost:8000/dashboard/index.html)
-
-> **Seamless Navigation**: The landing page includes an **"Ops Console"** button in the floating navbar and footer that navigates straight to `/dashboard/index.html`. The dashboard login screen includes a **"← Back to EcoLink"** link to return to the landing page.
-
----
-
-### Option B: Serving Individual Folders on Dedicated Ports
-
-If you prefer to serve the landing page and dashboard on separate ports:
-
-```bash
-# Terminal 1 — Serve the Public Landing Page on port 8080:
-python3 -m http.server 8080 --directory frontend/site
-
-# Terminal 2 — Serve the Operations Console on port 8000:
-python3 -m http.server 8000 --directory frontend/dashboard
-```
-
-- Landing Page URL: [`http://localhost:8080`](http://localhost:8080)
-- Operations Console URL: [`http://localhost:8000`](http://localhost:8000)
+The map tab will show a blank canvas until an API key is configured. All other tabs (Pickups, WhatsApp Users) work normally.
 
 ---
 
@@ -120,28 +119,37 @@ When accessing `dashboard/index.html`, you are greeted by the Cognito-ready auth
    - IVR Outbound Calling banner for pickups in `offered` state.
    - Agent action log timeline and manual override transition buttons.
 4. **Live Dispatch Map**: Click the **"Live Dispatch"** tab in the sidebar:
-   - Recycler pins (green circles), drop-off hubs (purple circles), and household pickups (blue circles).
-   - Click **"Fit All Markers"** to automatically zoom and bound all active locations.
-   - Click **"Center Hub"** to re-center Bangalore Central coordinates.
+   - Powered by **MapLibre GL JS + Amazon Location Service** tiles (replaces OpenStreetMap/Leaflet).
+   - Recycler pins (green), authorised drop-off hubs (purple), household pickups (blue).
+   - **"You are here"** pulsing blue marker via browser geolocation.
+   - Click **"Fit All Markers"** to zoom-fit all active locations.
+   - Click **"Center Hub"** to fly to your GPS position (falls back to Bangalore Central).
 5. **Demo Reset**: Click the Demo Reset button in the sidebar footer to restore initial test pickups anytime.
 
 ---
 
 ### 3.3 Connecting the Console to the Deployed Backend
 
-The console ships in demo mode. To use the live backend, edit `frontend/dashboard/config.js`:
+`frontend/dashboard/config.js` is **git-ignored** — never committed. Each developer maintains their own copy.
 
-```js
-window.ECOLINK_CONFIG = { mockMode: false, baseUrl: 'https://<api-id>.execute-api.<region>.amazonaws.com/prod' };
+```bash
+cp frontend/dashboard/config.example.js frontend/dashboard/config.js
+# then fill in the values below
 ```
 
-`baseUrl` is the `ApiUrl` output of `cdk deploy`. Sign in with a Cognito user (created with the commands
-in `backend/README.md`, "Create a dashboard user"). Notes for live mode:
+| Field | Where to get it |
+|---|---|
+| `baseUrl` | `ApiUrl` output of `cdk deploy` |
+| `cognito.userPoolId` | `UserPoolId` output of `cdk deploy` |
+| `cognito.clientId` | `UserPoolClientId` output of `cdk deploy` |
+| `amazonLocation.apiKey` | Add as `AMAZON_LOCATION_API_KEY` in `.env`; injected automatically by `scripts/serve_dashboard.py` |
 
-- Viewers see household addresses, phone numbers and map positions only after a pickup is confirmed;
-  admins always see them and can override a pickup's status.
+Set `mockMode: false`, then run `python scripts/serve_dashboard.py` and sign in with a Cognito user
+(see `backend/README.md`, "Create a dashboard user").
+
+Notes for live mode:
+- Viewers see addresses and phone numbers only after a pickup is confirmed; admins always see them.
 - The **Demo Reset** button is disabled against the live backend. Run `python scripts/reset.py --yes` instead.
 
-The stack does not create hosting for `site/` and `dashboard/`. To publish them, put the folders on any static
-host (for example an S3 bucket behind CloudFront that you create separately) and set the stack's
-`cors_origin` (`CORS_ORIGIN` in `.env`) to that site's origin.
+The stack does not create hosting for `site/` and `dashboard/`. To publish them statically (e.g. S3 + CloudFront),
+set `CORS_ORIGIN` in `.env` to that origin before `cdk deploy`.

@@ -38,8 +38,8 @@ window.ECOLINK_CONFIG = {
     region: 'ap-southeast-2'
   },
   amazonLocation: {
-    region: 'us-east-1',           // e.g. ap-south-1
+    region: 'ap-southeast-2',
     mapName: 'ecolink-dispatch-map',
-    apiKey: process.env.API_KEY  
+    apiKey: document.querySelector('meta[name="amazon-location-key"]')?.content || ''
   }
 };

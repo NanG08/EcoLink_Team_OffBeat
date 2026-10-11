@@ -1111,17 +1111,23 @@ body {
   overflow: hidden;
 }
 
-/* Leaflet Custom Card Popup */
-.leaflet-popup-content-wrapper {
+/* MapLibre attribution — legally required, kept minimal */
+.maplibregl-ctrl-attrib {
+  font-size: 0.62rem !important;
+  opacity: 0.55 !important;
+  background: rgba(255,255,255,0.7) !important;
+  backdrop-filter: blur(4px) !important;
+}
+.maplibregl-ctrl-attrib:hover { opacity: 1 !important; }
+
+/* MapLibre popup */
+.maplibregl-popup-content {
   border-radius: var(--radius-md) !important;
   box-shadow: var(--shadow-md) !important;
   font-family: var(--font-sans) !important;
-  padding: 2px !important;
-}
-.leaflet-popup-content {
-  margin: 12px 14px !important;
-  line-height: 1.5 !important;
   font-size: 0.84rem !important;
+  padding: 12px 14px !important;
+  line-height: 1.5 !important;
 }
 
 /* Mobile & Tablet Responsiveness */

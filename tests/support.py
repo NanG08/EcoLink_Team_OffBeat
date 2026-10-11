@@ -48,7 +48,8 @@ class LocalServer:
 
     def __init__(self) -> None:
         self.requests: list[dict[str, Any]] = []
-        self.responder: Callable[[str, str], tuple[int, dict]] = self._default
+        # responder(path, body) -> (status, json_or_bytes[, extra_headers])
+        self.responder: Callable[[str, str], tuple] = self._default
         outer = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -57,15 +58,18 @@ class LocalServer:
                 body = self.rfile.read(length).decode()
                 outer.requests.append({"method": self.command, "path": self.path,
                                        "headers": dict(self.headers), "body": body})
-                status, payload = outer.responder(self.path, body)
-                data = json.dumps(payload).encode()
+                status, payload, *extra = outer.responder(self.path, body)
+                data = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
                 self.send_response(status)
-                self.send_header("Content-Type", "application/json")
+                headers = {"Content-Type": "image/jpeg" if isinstance(payload, bytes) else "application/json"}
+                headers.update(extra[0] if extra else {})
+                for name, value in headers.items():
+                    self.send_header(name, value)
                 self.send_header("Content-Length", str(len(data)))
                 self.end_headers()
                 self.wfile.write(data)
 
-            do_GET = do_POST = _handle
+            do_GET = do_POST = do_DELETE = _handle
 
             def log_message(self, *args: Any) -> None:  # keep test output clean
                 pass
@@ -87,6 +91,8 @@ class LocalServer:
             return 201, {"sid": "SM" + "a" * 32}
         if path.endswith("/Calls.json"):
             return 201, {"sid": "CA" + "b" * 32}
+        if path.endswith(".json") and "/Media/" in path:  # DELETE of a media resource
+            return 200, {}
         if path.endswith("/agent/message"):
             return 200, {"reply_text": "Namaste! Regular waste or e-waste?", "actions": []}
         return 404, {"detail": "not found"}

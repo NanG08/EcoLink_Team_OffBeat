@@ -66,7 +66,7 @@ def _response(event: dict) -> dict[str, Any]:
 
     voice = deps.get_voice()
     if not voice.verify_request(request):
-        raise invalid_signature()
+        raise invalid_signature(request)
     parsed = voice.parse_response(request)
     pickup = deps.get_service().record_recycler_response(parsed.pickup_id, parsed.digit)
     content_type, body = voice.ack({"pickup_id": pickup["pickup_id"], "status": pickup["status"]})

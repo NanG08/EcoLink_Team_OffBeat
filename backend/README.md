@@ -135,7 +135,7 @@ All JSON. Errors are always `{"error": "<code>", "detail": "<human readable mess
 | `POST /uploads/presign {user_id,content_type}` | API key | Pre-signed S3 POST limited to one key, one image type, ≤ 5 MB; returns a pre-signed GET `image_url` for `/classify`. |
 | `POST /auth/login {email,password[,new_password]}` | none | Cognito sign-in for the dashboard → `{id_token,expires_in,user,group}`. |
 | `GET /pickups`, `GET /pickups/{id}` | Cognito ID token | Dashboard views; `Authorization: <idToken>` (no `Bearer`). |
-| `GET /dashboard/recyclers`, `PATCH /dashboard/pickups/{id}` | Cognito ID token | The latter is `admins` only. |
+| `GET /dashboard/recyclers`, `GET /dashboard/users`, `PATCH /dashboard/pickups/{id}` | Cognito ID token | Users are joined with conversation state; the latter is `admins` only. |
 
 **State machine:** `requested → offered | cancelled`; `offered → confirmed | declined | cancelled | requested`;
 `declined → offered | requested | cancelled`; `confirmed → completed | cancelled`. Same-status requests are idempotent.

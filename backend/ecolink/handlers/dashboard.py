@@ -32,19 +32,22 @@ def handler(event: dict, context: Any) -> Any:
 
 
 def users(event: dict, context: Any) -> dict[str, list[dict[str, Any]]]:
-    """GET /dashboard/users -> WhatsApp users joined with conversation state."""
+    """GET /dashboard/users -> WhatsApp users joined with conversation state + pickup count."""
     repo = deps.get_repo()
     states = {row["user_id"]: _decode_state(row) for row in repo.list_conversation_states()}
     rows = []
     for user in sorted(repo.list_users(), key=lambda row: row.get("user_id", "")):
-        state = states.get(user["user_id"], {})
+        uid = user["user_id"]
+        state = states.get(uid, {})
+        pickup_count = len(repo.list_pickups(user_id=uid, limit=100))
         rows.append({
-            "user_id": user["user_id"],
+            "user_id": uid,
             "name": user.get("name"),
             "lang": user.get("lang", state.get("lang", "en")),
             "lat": user.get("lat"),
             "lng": user.get("lng"),
             "created_at": user.get("created_at"),
+            "pickup_count": pickup_count,
             "conversation_state": state,
         })
     return {"users": rows}

@@ -53,8 +53,21 @@ document.addEventListener('DOMContentLoaded', () => {
   let recyclers = [];
   let whatsappUsers = [];
   let selectedPickupId = null;
-  let leafletMap = null;
+  let alMap = null;
   let mapMarkers = [];
+
+  // Restore session on page load (survives refresh)
+  const restored = api.restoreSession();
+  if (restored) {
+    userBadge.textContent = restored.group === 'admins' ? 'Admin' : 'Viewer';
+    userBadge.style.background = restored.group === 'admins' ? '#fef3c7' : '#e0e7ff';
+    userBadge.style.color = restored.group === 'admins' ? '#b45309' : '#3730a3';
+    const sidebarUserDisplay = document.getElementById('sidebar-user-display');
+    if (sidebarUserDisplay && restored.user) sidebarUserDisplay.textContent = restored.user.email || '';
+    loginScreen.classList.add('hidden');
+    app.classList.remove('hidden');
+    loadDashboardData();
+  }
 
   // --- Auth Handler ---
   loginForm.addEventListener('submit', async (e) => {
@@ -94,9 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
     api.clearToken();
     app.classList.add('hidden');
     loginScreen.classList.remove('hidden');
-    if (leafletMap) {
-      leafletMap.remove();
-      leafletMap = null;
+    if (alMap) {
+      alMap.remove();
+      alMap = null;
     }
   });
 
@@ -169,16 +182,23 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Map Controls ---
   if (btnMapFit) {
     btnMapFit.addEventListener('click', () => {
-      if (!leafletMap || mapMarkers.length === 0) return;
-      const group = new L.featureGroup(mapMarkers);
-      leafletMap.fitBounds(group.getBounds().pad(0.15));
+      if (!alMap || mapMarkers.length === 0) return;
+      const coords = mapMarkers.map(m => m.getLngLat());
+      const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
+      alMap.fitBounds(bounds, { padding: 60 });
     });
   }
 
   if (btnMapCenter) {
     btnMapCenter.addEventListener('click', () => {
-      if (!leafletMap) return;
-      leafletMap.setView([12.9716, 77.5946], 12);
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => alMap && alMap.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 13 }),
+          () => alMap && alMap.flyTo({ center: [77.5946, 12.9716], zoom: 12 })
+        );
+      } else if (alMap) {
+        alMap.flyTo({ center: [77.5946, 12.9716], zoom: 12 });
+      }
     });
   }
 
@@ -196,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (selectedPickupId) {
         showPickupDetail(selectedPickupId);
       }
-      if (leafletMap) {
+      if (alMap) {
         updateMapMarkers();
       }
     } catch (err) {
@@ -215,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td>${user.name || '—'}</td>
         <td>${user.lang || '—'}</td>
         <td>${state.path || 'idle'}</td>
-        <td style="font-family:var(--font-mono);">${state.pickup_id || '—'}</td>
+        <td style="font-family:var(--font-mono);">${user.pickup_count ?? (state.pickup_id ? 1 : 0)}</td>
         <td>${state.last_updated ? new Date(state.last_updated).toLocaleString('en-IN') : '—'}</td>
       `;
       usersTableBody.appendChild(row);
@@ -297,7 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const userDisplay = p.user_id.includes('protected')
         ? `<span style="font-size:0.78rem; color:var(--text-faint); font-style:italic;">🔒 Protected</span>`
-        : `<span style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-main); font-weight:600;">${p.user_id}</span>`;
+        : `<span style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-main); font-weight:600;">${p.user_id}</span>${p.customer_name ? `<br><small style="color:var(--text-muted); font-size:0.75rem;">${p.customer_name}</small>` : ''}`;
 
       tr.innerHTML = `
         <td style="font-family:var(--font-mono); font-weight:700; font-size:0.82rem; color:var(--deep-green);">
@@ -409,7 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="detail-box">
           <p><strong>Pickup ID:</strong> <span style="font-family:var(--font-mono); font-weight:700; color:var(--deep-green);">${p.pickup_id}</span></p>
           <p><strong>Status:</strong> <span class="badge badge-${p.status}">${p.status}</span></p>
-          <p><strong>Customer:</strong> <span style="font-family:var(--font-mono); font-weight:600;">${p.user_id}</span></p>
+          <p><strong>Customer:</strong> <span style="font-family:var(--font-mono); font-weight:600;">${p.user_id}</span>${p.customer_name ? ` <span style="color:var(--text-muted); font-size:0.85rem;">(${p.customer_name})</span>` : ''}</p>
           <p><strong>Slot:</strong> <span>${new Date(p.slot).toLocaleString('en-IN')}</span></p>
         </div>
       </div>
@@ -468,74 +488,84 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // --- Map Integration (Leaflet / OpenStreetMap / Amazon Location) ---
+  // --- Map Integration (MapLibre GL JS + Amazon Location Service) ---
   function initOrUpdateMap() {
-    const canvas = document.getElementById('map-canvas');
-    if (!leafletMap) {
-      leafletMap = L.map('map-canvas').setView([12.9716, 77.5946], 12);
+    if (alMap) { updateMapMarkers(); return; }
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors | EcoLink Logistics'
-      }).addTo(leafletMap);
+    const cfg = window.ECOLINK_CONFIG && window.ECOLINK_CONFIG.amazonLocation;
+    const apiKey = (cfg && cfg.apiKey) || '';
+    const region  = (cfg && cfg.region) || '';
+    const mapName = (cfg && cfg.mapName) || '';
+
+    const style = (apiKey && region && mapName)
+      ? `https://maps.geo.${region}.amazonaws.com/maps/v0/maps/${mapName}/style-descriptor?key=${apiKey}`
+      : 'https://tiles.openfreemap.org/styles/liberty';
+
+    alMap = new maplibregl.Map({
+      container: 'map-canvas',
+      style,
+      center: [77.5946, 12.9716],
+      zoom: 11
+    });
+
+    alMap.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+    // "You are here" geolocation marker
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        const el = document.createElement('div');
+        el.style.cssText = 'width:16px;height:16px;border-radius:50%;background:#3b82f6;border:3px solid #fff;box-shadow:0 0 0 4px rgba(59,130,246,0.3);animation:pulseDot 1.6s infinite;';
+        new maplibregl.Marker({ element: el })
+          .setLngLat([pos.coords.longitude, pos.coords.latitude])
+          .setPopup(new maplibregl.Popup().setHTML('<strong>You are here</strong>'))
+          .addTo(alMap);
+      });
     }
-    updateMapMarkers();
+
+    alMap.on('load', updateMapMarkers);
+  }
+
+  function makeEl(color) {
+    const el = document.createElement('div');
+    el.style.cssText = `width:14px;height:14px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:pointer;`;
+    return el;
   }
 
   function updateMapMarkers() {
-    if (!leafletMap) return;
-
-    mapMarkers.forEach(m => leafletMap.removeLayer(m));
+    if (!alMap) return;
+    mapMarkers.forEach(m => m.remove());
     mapMarkers = [];
 
-    // Recyclers (green/purple)
     recyclers.forEach(r => {
+      if (!r.lat || !r.lng) return;
       const isDropoff = r.accepts && (r.accepts.includes('battery') || r.accepts.includes('ewaste'));
       const color = isDropoff ? '#8b5cf6' : '#10b981';
-
-      const circle = L.circleMarker([r.lat, r.lng], {
-        radius: 8,
-        fillColor: color,
-        color: '#ffffff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.85
-      }).addTo(leafletMap);
-
-      circle.bindPopup(`
-        <div style="font-family:var(--font-sans);">
-          <strong style="font-size:0.95rem; color:var(--deep-green);">${r.name}</strong><br/>
-          <span style="font-size:0.75rem; color:var(--text-muted);">${isDropoff ? 'Authorised Drop-off Center' : 'Kabadiwala Partner'}</span><br/>
-          <div style="margin:4px 0; font-size:0.78rem;"><strong>Accepts:</strong> ${r.accepts.join(', ')}</div>
-          <div style="font-size:0.75rem;">Status: <strong style="color:#059669;">${r.available ? 'Available' : 'Busy'}</strong></div>
-        </div>
+      const popup = new maplibregl.Popup({ offset: 10 }).setHTML(`
+        <strong>${r.name}</strong><br>
+        <span style="font-size:0.75rem;color:#6b7280;">${isDropoff ? 'Authorised Drop-off' : 'Kabadiwala Partner'}</span><br>
+        <span style="font-size:0.78rem;"><b>Accepts:</b> ${r.accepts.join(', ')}</span><br>
+        <span style="font-size:0.75rem;">Status: <b style="color:#059669;">${r.available ? 'Available' : 'Busy'}</b></span>
       `);
-
-      mapMarkers.push(circle);
+      const m = new maplibregl.Marker({ element: makeEl(color) })
+        .setLngLat([r.lng, r.lat])
+        .setPopup(popup)
+        .addTo(alMap);
+      mapMarkers.push(m);
     });
 
-    // Pickups (blue)
     pickups.forEach(p => {
       if (!p.lat || !p.lng) return;
-      const marker = L.circleMarker([p.lat, p.lng], {
-        radius: 9,
-        fillColor: '#3b82f6',
-        color: '#ffffff',
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.9
-      }).addTo(leafletMap);
-
-      marker.bindPopup(`
-        <div style="font-family:var(--font-sans);">
-          <strong style="font-size:0.95rem; color:var(--deep-green);">Pickup ${p.pickup_id}</strong><br/>
-          <div style="margin:3px 0;"><span class="badge badge-${p.status}">${p.status}</span></div>
-          <div style="font-size:0.78rem; margin-bottom:6px;"><strong>Items:</strong> ${p.items.map(it => it.label).join(', ')}</div>
-          <button class="btn btn-secondary btn-sm" style="width:100%; font-size:0.75rem; padding:3px 8px;" onclick="window.selectFromMap('${p.pickup_id}')">Open in Drawer →</button>
-        </div>
+      const popup = new maplibregl.Popup({ offset: 10 }).setHTML(`
+        <strong>Pickup ${p.pickup_id}</strong><br>
+        <span class="badge badge-${p.status}">${p.status}</span><br>
+        <span style="font-size:0.78rem;"><b>Items:</b> ${p.items.map(i => i.label).join(', ')}</span><br>
+        <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;font-size:0.75rem;" onclick="window.selectFromMap('${p.pickup_id}')">Open in Drawer →</button>
       `);
-
-      mapMarkers.push(marker);
+      const m = new maplibregl.Marker({ element: makeEl('#3b82f6') })
+        .setLngLat([p.lng, p.lat])
+        .setPopup(popup)
+        .addTo(alMap);
+      mapMarkers.push(m);
     });
   }
 

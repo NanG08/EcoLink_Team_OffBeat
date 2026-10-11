@@ -52,13 +52,17 @@ class EcoLinkAPIClient:
 
     @staticmethod
     def _key_from_secret() -> str:
-        """Fetch the API key from AWS Secrets Manager when EcoLink_API_KEY_SECRET_NAME is set,
-        so it never has to sit in a plaintext Lambda environment variable."""
+        """Fetch the API key from AWS when EcoLink_API_KEY_SECRET_NAME is set, so it never has to
+        sit in a plaintext Lambda environment variable. SECRETS_BACKEND=ssm reads it from an SSM
+        SecureString parameter instead of Secrets Manager."""
         secret_name = os.environ.get("EcoLink_API_KEY_SECRET_NAME")
         if not secret_name:
             return ""
         import boto3
 
+        if os.environ.get("SECRETS_BACKEND", "").lower() == "ssm":
+            param = boto3.client("ssm").get_parameter(Name="/" + secret_name.lstrip("/"), WithDecryption=True)
+            return param["Parameter"]["Value"].strip()
         return boto3.client("secretsmanager").get_secret_value(SecretId=secret_name)["SecretString"].strip()
 
     def _headers(self) -> dict[str, str]:

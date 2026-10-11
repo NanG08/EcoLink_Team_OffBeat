@@ -22,7 +22,15 @@ class ImageStore:
             import boto3
             from botocore.config import Config
 
-            client = boto3.client("s3", config=Config(signature_version="s3v4"))
+            region = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION")
+            # Pin the regional endpoint: pre-signed URLs for a bucket outside us-east-1 must not
+            # use the global endpoint, which answers 307 redirects for new buckets (a POST upload
+            # cannot follow them).
+            client = boto3.client(
+                "s3", region_name=region,
+                endpoint_url=f"https://s3.{region}.amazonaws.com" if region else None,
+                config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
+            )
         self._s3 = client
         self._get_ttl = int(os.environ.get("IMAGE_URL_TTL_SECONDS", "3600"))
 

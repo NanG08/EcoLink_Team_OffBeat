@@ -357,6 +357,7 @@ class EcoLinkStack(Stack):
         self._allow_table(self.dashboard_fn, "recyclers", "dynamodb:Scan")
         self._allow_table(self.dashboard_fn, "users", "dynamodb:Scan")
         self._allow_table(self.dashboard_fn, "conversation_state", "dynamodb:Scan")
+        self._allow_table(self.dashboard_fn, "pickups", "dynamodb:Query")  # by_user GSI for pickup counts
 
         self.match_fn = fn("MatchFn", "recyclers_match")
         self._allow_table(self.match_fn, "recyclers", "dynamodb:Scan")

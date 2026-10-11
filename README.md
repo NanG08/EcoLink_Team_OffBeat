@@ -301,12 +301,10 @@ pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorc
 pip install -r ml/vision/requirements.txt
 ```
 
-<<<<<<< Updated upstream
 - The backend tests run the **real handlers and boto3 code** against emulated AWS (DynamoDB with the real table schema, S3, SNS, SQS, Secrets Manager, SSM, Cognito), make real HTTP calls to a local server standing in for Twilio, and run the real `best.onnx` model. They include the unit tests for matching and the address rule, which fail if the rule is weakened.
 - Not testable without real accounts: the Bedrock call itself, Twilio's media download, and live phone calls. `python scripts/smoke_test.py [--call]` checks those against a deployed stack.
 - `tests/test_serving_handler.py` expects an `ml/serving/lambda_handler.py` that is not in the repository yet.
 - `pytest.ini` disables a broken third-party `web3` plugin that some environments have installed.
-=======
 ---
 
 ## Part D: Conversational Voice Agent
@@ -358,4 +356,3 @@ reply TwiML (<Say reply> + <Gather speech> for next turn)
 |---|---|
 | `backend/ecolink/handlers/voice_agent.py` | Lambda handler for inbound voice calls |
 | `backend/ecolink/providers/voice_agent_twiml.py` | TwiML builders (greeting, reply, goodbye, error, transfer) |
->>>>>>> Stashed changes

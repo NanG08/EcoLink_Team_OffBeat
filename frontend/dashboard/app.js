@@ -2,7 +2,8 @@
  * EcoLink Operations Dashboard Main Application Logic
  */
 document.addEventListener('DOMContentLoaded', () => {
-  const api = new ApiClient({ mockMode: true });
+  // dashboard/config.js decides between the built-in demo data and the deployed backend.
+  const api = new ApiClient(window.ECOLINK_CONFIG || { mockMode: true });
 
   // DOM Elements
   const loginScreen = document.getElementById('login-screen');
@@ -21,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabPanes = document.querySelectorAll('.tab-pane');
 
   const tableBody = document.getElementById('pickups-table-body');
+  const usersTableBody = document.getElementById('users-table-body');
   const statusFilterChips = document.querySelectorAll('#status-filters .chip');
   const detailDrawer = document.getElementById('detail-drawer');
   const detailContent = document.getElementById('detail-content');
@@ -49,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchQuery = '';
   let pickups = [];
   let recyclers = [];
+  let whatsappUsers = [];
   let selectedPickupId = null;
   let leafletMap = null;
   let mapMarkers = [];
@@ -112,6 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
         viewTitle.textContent = 'The network is moving.';
         if (viewSubtitle) viewSubtitle.textContent = 'Live recycler and pickup activity across the operating cluster.';
         setTimeout(initOrUpdateMap, 200);
+      } else if (targetTab === 'users-view') {
+        viewTitle.textContent = 'WhatsApp users';
+        if (viewSubtitle) viewSubtitle.textContent = 'Household contacts and current conversation state.';
       } else {
         viewTitle.textContent = 'Pickup network';
         if (viewSubtitle) viewSubtitle.textContent = 'Every request, offer, and confirmed pickup in one place.';
@@ -181,9 +187,11 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       pickups = await api.getPickups();
       recyclers = await api.getRecyclers();
+      whatsappUsers = await api.getWhatsAppUsers();
 
       updateStats();
       renderPickupsTable();
+      renderWhatsAppUsers();
 
       if (selectedPickupId) {
         showPickupDetail(selectedPickupId);
@@ -193,6 +201,27 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
+    }
+  }
+
+  function renderWhatsAppUsers() {
+    if (!usersTableBody) return;
+    usersTableBody.innerHTML = '';
+    whatsappUsers.forEach(user => {
+      const state = user.conversation_state || {};
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td style="font-family:var(--font-mono); font-weight:700;">${user.user_id}</td>
+        <td>${user.name || '—'}</td>
+        <td>${user.lang || '—'}</td>
+        <td>${state.path || 'idle'}</td>
+        <td style="font-family:var(--font-mono);">${state.pickup_id || '—'}</td>
+        <td>${state.last_updated ? new Date(state.last_updated).toLocaleString('en-IN') : '—'}</td>
+      `;
+      usersTableBody.appendChild(row);
+    });
+    if (whatsappUsers.length === 0) {
+      usersTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem;">No WhatsApp users found</td></tr>';
     }
   }
 

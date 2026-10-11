@@ -1,8 +1,7 @@
 # EcoLink System & Operations
 
 EcoLink is a WhatsApp-first assistant for household waste management. A household sends a photo (or describes an e-waste item) on
-WhatsApp, gets an **estimated** price range, and, if they confirm, a nearby kabadiwala (scrap dealer) is **phoned** and presses 1 to accept
-or 2 to decline. Both sides then get a confirmation message. Batteries and other hazardous items are never sent to a normal pickup; they go to
+WhatsApp, gets an **estimated** price range, and, if they confirm, a nearby kabadiwala (scrap dealer) is **phoned** . Both sides then get a confirmation message. Batteries and other hazardous items are never sent to a normal pickup; they go to
 authorised drop-off points. A household's address is shared with a recycler only after the recycler accepts.
 
 It is built with the Strands Agents SDK and AWS serverless services (Lambda, API Gateway, DynamoDB, S3, SNS, Cognito, Secrets Manager,
@@ -42,6 +41,20 @@ Ops dashboard ─► /auth/login ─► Cognito ID token ─► /pickups, /dashb
 
 Rules enforced in code (not only in prompts): no booking without an explicit "yes"; every price is labelled an estimate; hazardous items
 never go to a normal pickup; the household address reaches a recycler only once the pickup is `confirmed`; photos are private and expire after 7 days.
+
+![EcoLink Operations Console, Live Dispatch map of Bengaluru showing active pickups, recyclers (kabadiwalas) and authorised drop-off points](docs/images/Screenshot%202026-10-11%20180011.png)
+
+*The Operations Console's Live Dispatch view: active pickups, recyclers (kabadiwalas) and authorised drop-off points across the Bengaluru cluster.*
+
+![EcoLink Operations Console pickups table with summary counts and each pickup's materials, estimated value, assigned partner and status](docs/images/ops_console.jpg)
+
+*The Operations Console's pickups table: active requests, pending calls and completed pickups, with each pickup's materials, estimated value, assigned partner and status (confirmed, offered while calling, requested).*
+
+### Try WhatsApp here
+
+![Twilio WhatsApp sandbox: send "join stiff-straight" to +1 415 523 8886](docs/images/Screenshot%202026-10-11%20224305.png)
+
+*Open WhatsApp, send the message `join stiff-straight` to **+1 415 523 8886**, then say hi to start a conversation with the deployed agent.*
 
 ---
 

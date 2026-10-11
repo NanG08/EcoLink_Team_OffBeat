@@ -16,6 +16,14 @@ Bedrock), deployed with AWS CDK (Python). Twilio provides WhatsApp and voice.
 
 ## How it works
 
+![EcoLink on AWS: one agent, two channels (WhatsApp and voice), one address rule](docs/images/Gemini_Generated_Image_p72eghp72eghp72e.png)
+
+*EcoLink on AWS: one agent, two channels (WhatsApp and voice), one address rule. The phone on the right is a real chat with the deployed stack.*
+
+![The EcoLink WhatsApp flow on a real phone: language choice, a photo of waste, a price estimate, address and slot confirmation, and a pickup request sent to a nearby kabadiwala](docs/images/whatsapp_flow_v2.jpg)
+
+*The WhatsApp flow, recorded against the deployed stack: language choice, photo of waste, estimated price, address and slot confirmation, and the pickup request to a nearby kabadiwala.*
+
 ```
 WhatsApp user ─► Twilio ─► API Gateway ─► MessagingWebhook Lambda ─► Agent Lambda (Strands + Bedrock) ─► reply via Twilio
                                 │ photo copied to private S3          │ tools call this API with an API key:

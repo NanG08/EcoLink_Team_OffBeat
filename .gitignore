@@ -8,3 +8,8 @@ node_modules/
 .DS_Store
 .env
 infra/.model-stage/
+
+# Doc images: only the ones embedded in README.md are tracked
+docs/images/*
+!docs/images/whatsapp_flow_v2.jpg
+!docs/images/Gemini_Generated_Image_p72eghp72eghp72e.png

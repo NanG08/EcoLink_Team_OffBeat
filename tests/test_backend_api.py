@@ -339,7 +339,7 @@ class WebhookTests(AwsTestCase):
         forwarded = json.loads(next(r for r in self.server.requests if r["path"] == "/agent/message")["body"])
         # The seeded user has a saved location, which the agent needs for find_recyclers.
         self.assertEqual(forwarded, {"user_id": USER_ID, "lang": "en",
-                                     "text": "[USER_LOCATION: lat=12.9716 lng=77.5946]" + chr(10) + "hello"})
+                         "text": "[KNOWN_USER_LOCATION: lat=12.9716 lng=77.5946]" + chr(10) + "hello"})
         (msg,) = self.server.messages()
         self.assertEqual((msg["To"], msg["From"], msg["Body"]),
                          (USER_ID, "whatsapp:+14155238886", "Namaste! Regular waste or e-waste?"))

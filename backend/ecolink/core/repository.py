@@ -81,6 +81,30 @@ class Repository:
             },
         )
 
+    def list_users(self) -> list[dict[str, Any]]:
+        """Return all WhatsApp users for the operations dashboard."""
+        table = self._table("USERS_TABLE")
+        items: list[dict[str, Any]] = []
+        kwargs: dict[str, Any] = {}
+        while True:
+            page = table.scan(**kwargs)
+            items.extend(page.get("Items", []))
+            if "LastEvaluatedKey" not in page:
+                return items
+            kwargs["ExclusiveStartKey"] = page["LastEvaluatedKey"]
+
+    def list_conversation_states(self) -> list[dict[str, Any]]:
+        """Return persisted conversation state rows for the dashboard join."""
+        table = self._table("CONVERSATION_STATE_TABLE")
+        items: list[dict[str, Any]] = []
+        kwargs: dict[str, Any] = {}
+        while True:
+            page = table.scan(**kwargs)
+            items.extend(page.get("Items", []))
+            if "LastEvaluatedKey" not in page:
+                return items
+            kwargs["ExclusiveStartKey"] = page["LastEvaluatedKey"]
+
     # ── recyclers ──────────────────────────────────────────────────────────────
     def get_recycler(self, recycler_id: str) -> dict[str, Any] | None:
         return self._table("RECYCLERS_TABLE").get_item(Key={"recycler_id": recycler_id}).get("Item")

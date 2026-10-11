@@ -44,7 +44,6 @@ from ecolink import schema  # noqa: E402  single source of truth for table defin
 
 RUNTIME = _lambda.Runtime.PYTHON_3_12
 ARCH = _lambda.Architecture.ARM_64
-<<<<<<< Updated upstream
 
 # ML artifacts uploaded to the models bucket (key -> local file). The Lambdas run the ONNX export;
 # best.pt (the PyTorch checkpoint it was exported from) is stored beside it as the source of truth.
@@ -56,11 +55,10 @@ MODEL_FILES = {
 RUNTIME_MODEL_KEYS = ("vision/best.onnx", "pricing/rate_table.json")  # what the Lambdas actually read
 MODEL_STAGE_DIR = Path(__file__).resolve().parent / ".model-stage"
 ML_LAYER_DIR = Path(__file__).resolve().parent / "ml-layer"
-=======
+
 # Vision Lambda uses x86_64: onnxruntime manylinux wheels are most reliably
 # available for cp312-manylinux_x86_64, avoiding Docker fallback during bundling.
 VISION_ARCH = _lambda.Architecture.X86_64
->>>>>>> Stashed changes
 DYNAMO_TYPES = {"S": ddb.AttributeType.STRING}
 
 
@@ -86,7 +84,6 @@ class _AgentPipBundling:
 
 
 @jsii.implements(cdk.ILocalBundling)
-<<<<<<< Updated upstream
 class _MlLayerBundling:
     """Layer for the local vision model: Linux/arm64 wheels of onnxruntime, numpy and Pillow."""
 
@@ -126,7 +123,7 @@ def _stage_models() -> tuple[Path, str]:
     return MODEL_STAGE_DIR, digest.hexdigest()[:12]
 
 
-=======
+@jsii.implements(cdk.ILocalBundling)
 class _VisionPipBundling:
     """
     Bundle the ONNX vision Lambda without Docker:
@@ -181,8 +178,6 @@ class _VisionPipBundling:
             (ml_out / "__init__.py").write_text("")
         return True
 
-
->>>>>>> Stashed changes
 def _bedrock_resources(model_id: str, region: str, account: str) -> list[str]:
     """ARNs needed to invoke a model or cross-region inference profile (e.g. apac.amazon.nova-pro-v1:0)."""
     foundation = re.sub(r"^(us|eu|apac|global|us-gov)\.", "", model_id)
@@ -360,6 +355,8 @@ class EcoLinkStack(Stack):
         self.auth_fn.add_environment("COGNITO_CLIENT_ID", self.user_pool_client.user_pool_client_id)
         self.dashboard_fn = fn("DashboardFn", "dashboard")
         self._allow_table(self.dashboard_fn, "recyclers", "dynamodb:Scan")
+        self._allow_table(self.dashboard_fn, "users", "dynamodb:Scan")
+        self._allow_table(self.dashboard_fn, "conversation_state", "dynamodb:Scan")
 
         self.match_fn = fn("MatchFn", "recyclers_match")
         self._allow_table(self.match_fn, "recyclers", "dynamodb:Scan")
@@ -526,6 +523,7 @@ class EcoLinkStack(Stack):
         route(root.add_resource("auth").add_resource("login"), "POST", self.auth_fn, None)
         dashboard = root.add_resource("dashboard")
         route(dashboard.add_resource("recyclers"), "GET", self.dashboard_fn, dashboard_auth)
+        route(dashboard.add_resource("users"), "GET", self.dashboard_fn, dashboard_auth)
         route(dashboard.add_resource("pickups").add_resource("{id}"), "PATCH", self.pickups_fn, dashboard_auth)
 
         voice = root.add_resource("voice")

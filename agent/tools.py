@@ -13,7 +13,9 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from strands import tool
@@ -38,6 +40,51 @@ TIPS: dict[str, str] = {
     "ewaste": "Remove personal data from devices before handing them to an authorised e-waste facility.",
     "battery": "Never crush or puncture a battery – take it to an authorised hazardous-waste drop-off point.",
 }
+
+_MONTHS = {name: number for number, name in enumerate(
+    ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), 1
+)}
+
+
+def _normalise_slot(slot: str) -> str:
+    """Convert common WhatsApp date/time phrasing to the API's ISO 8601 format."""
+    try:
+        datetime.fromisoformat(slot.replace("Z", "+00:00"))
+        return slot
+    except ValueError:
+        pass
+
+    match = re.search(
+        r"\b(?P<day>\d{1,2})(?:st|nd|rd|th)?\s+(?P<month>[A-Za-z]{3,9})"
+        r"(?:\s+(?P<year>20\d{2}))?.*?\b(?P<hour>\d{1,2})(?::(?P<minute>\d{2}))?\s*"
+        r"(?P<meridiem>am|pm)\b",
+        slot,
+        re.IGNORECASE,
+    )
+    if not match:
+        return slot
+
+    month = _MONTHS.get(match.group("month")[:3].lower())
+    if month is None:
+        return slot
+    hour = int(match.group("hour"))
+    if match.group("meridiem").lower() == "pm" and hour != 12:
+        hour += 12
+    elif match.group("meridiem").lower() == "am" and hour == 12:
+        hour = 0
+    year = int(match.group("year") or datetime.now().year)
+    try:
+        value = datetime(
+            year,
+            month,
+            int(match.group("day")),
+            hour,
+            int(match.group("minute") or 0),
+            tzinfo=timezone(timedelta(hours=5, minutes=30)),
+        )
+    except ValueError:
+        return slot
+    return value.isoformat()
 
 
 def _log_tool_call(
@@ -293,7 +340,7 @@ def create_pickup(
         return err
 
     try:
-        result = _get_client().create_pickup(user_id, items, address_text, slot)
+        result = _get_client().create_pickup(user_id, items, address_text, _normalise_slot(slot))
         _log_tool_call("create_pickup", user_id, params, result, (time.monotonic() - t0) * 1000)
         return result
     except EcoLinkAPIError as exc:

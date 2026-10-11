@@ -70,6 +70,13 @@ def _format_price(low: int | float, high: int | float) -> str:
     return f"estimated Rs {int(low)}-{int(high)}"
 
 
+def _remove_internal_reasoning(reply: str) -> str:
+    """Never send model reasoning markup to a user-facing channel."""
+    cleaned = re.sub(r"<think(?:ing)?\b[^>]*>.*?</think(?:ing)?>", "", reply,
+                     flags=re.IGNORECASE | re.DOTALL)
+    return cleaned.strip()
+
+
 class EcoLinkAgent:
     """
     One instance per Lambda cold-start; re-used across warm invocations.
@@ -224,7 +231,7 @@ class EcoLinkAgent:
         # ── 6. Run the Strands agent ─────────────────────────────────────────
         try:
             response = self._agent(full_input)
-            reply = str(response)
+            reply = _remove_internal_reasoning(str(response))
         except Exception as exc:
             logger.error(
                 json.dumps(

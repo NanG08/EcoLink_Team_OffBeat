@@ -377,5 +377,5 @@ reply TwiML (<Say reply> + <Gather speech> for next turn)
 
 
 ### Video Link
-[![EcoLink Voice Agent Demo](https://youtu.be/aiS9fyoLE28)](https://youtu.be/aiS9fyoLE28)
+[![EcoLink Voice Agent Demo]](https://youtu.be/aiS9fyoLE28)
 
